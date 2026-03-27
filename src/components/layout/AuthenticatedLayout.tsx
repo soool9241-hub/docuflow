@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import Sidebar from '@/components/layout/Sidebar'
 import Header from '@/components/layout/Header'
 
-const PUBLIC_PATHS = ['/login', '/signup']
+const PUBLIC_PATHS = ['/login', '/signup', '/']
 
 export default function AuthenticatedLayout({
   children,
@@ -17,7 +17,7 @@ export default function AuthenticatedLayout({
   const pathname = usePathname()
 
   const isPublicPage = PUBLIC_PATHS.some(
-    (p) => pathname === p || pathname?.startsWith(p + '/')
+    (p) => pathname === p || (p !== '/' && pathname?.startsWith(p + '/'))
   )
 
   // Public pages (login/signup): render children only, no sidebar/header

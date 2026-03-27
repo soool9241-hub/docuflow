@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createSupabaseMiddleware } from '@/lib/supabase'
 
 // Routes that do not require authentication
-const PUBLIC_ROUTES = ['/login', '/signup']
+const PUBLIC_ROUTES = ['/login', '/signup', '/']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const isPublicRoute = PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
+    (route) => pathname === route || (route !== '/' && pathname.startsWith(`${route}/`))
   )
 
   // Unauthenticated users trying to access protected routes -> /login
@@ -26,8 +26,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Authenticated users visiting /login or /signup -> /dashboard
-  if (user && isPublicRoute) {
+  // Authenticated users visiting /login or /signup -> /dashboard (but allow / for landing)
+  if (user && isPublicRoute && pathname !== '/') {
     const dashboardUrl = request.nextUrl.clone()
     dashboardUrl.pathname = '/dashboard'
     return NextResponse.redirect(dashboardUrl)
