@@ -177,7 +177,7 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">대시보드</h1>
@@ -185,17 +185,17 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {statCards.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.label} className="flex items-center gap-4">
-              <div className={`p-3 rounded-xl ${stat.bg}`}>
-                <Icon className={`w-6 h-6 ${stat.color}`} />
+            <Card key={stat.label} className="flex items-center gap-3 sm:gap-4">
+              <div className={`p-2 sm:p-3 rounded-xl ${stat.bg}`}>
+                <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${stat.color}`} />
               </div>
               <div>
                 <p className="text-sm text-gray-500">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-xl lg:text-2xl font-bold text-gray-900">{stat.value}</p>
               </div>
             </Card>
           )
@@ -207,7 +207,7 @@ export default function DashboardPage() {
         {/* Recent Documents */}
         <div className="lg:col-span-2">
           <Card padding="none">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-gray-400" />
                 <h2 className="font-semibold text-gray-900">최근 서류</h2>
@@ -237,9 +237,9 @@ export default function DashboardPage() {
                   <Link
                     key={doc.id}
                     href={`/documents/${doc.id}`}
-                    className="flex items-center justify-between px-6 py-3.5 hover:bg-gray-50 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-3 hover:bg-gray-50 transition-colors"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium shrink-0 ${
                           TYPE_COLORS[doc.type] || 'bg-gray-100 text-gray-600'
@@ -249,8 +249,8 @@ export default function DashboardPage() {
                       </span>
                       <span className="text-sm text-gray-900 truncate">{doc.title}</span>
                     </div>
-                    <div className="flex items-center gap-4 shrink-0 ml-4">
-                      <span className="text-sm font-medium text-gray-700">
+                    <div className="flex items-center gap-3 sm:gap-4 shrink-0 mt-1.5 sm:mt-0 sm:ml-4 pl-1 sm:pl-0">
+                      <span className="text-xs sm:text-sm font-medium text-gray-700">
                         {formatCurrency(doc.total_amount)}
                       </span>
                       <span className="text-xs text-gray-400">

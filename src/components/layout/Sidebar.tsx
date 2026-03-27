@@ -43,6 +43,7 @@ export default function Sidebar() {
         className={`
           fixed top-0 left-0 z-50 h-screen bg-slate-900 text-white
           flex flex-col transition-all duration-300 ease-in-out
+          pb-[env(safe-area-inset-bottom)]
           ${collapsed ? 'w-20' : 'w-64'}
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static lg:z-auto
@@ -76,7 +77,7 @@ export default function Sidebar() {
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                  flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium
                   transition-all duration-150 group
                   ${
                     isActive
@@ -112,7 +113,7 @@ export default function Sidebar() {
 
       {/* Mobile toggle button - exposed for Header to use */}
       <button
-        className="lg:hidden fixed top-4 left-4 z-30 p-2 bg-slate-900 text-white rounded-lg shadow-lg"
+        className="lg:hidden fixed top-3 left-3 z-30 p-2.5 bg-slate-900 text-white rounded-lg shadow-lg"
         onClick={() => setMobileOpen(!mobileOpen)}
         aria-label="메뉴 열기"
         id="mobile-menu-toggle"

@@ -318,9 +318,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50">
+    <div className="flex flex-col h-[calc(100vh-120px)] sm:h-[calc(100vh-64px)] bg-gray-50">
       {/* Chat Header */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-3">
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-3 py-2 sm:px-6 sm:py-3">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
@@ -353,7 +353,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages Area */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-6">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {messages.map((msg) => (
             <ChatMessage
@@ -384,14 +384,14 @@ export default function ChatPage() {
 
           {/* Quick Suggestions (show only when just greeting) */}
           {messages.length === 1 && (
-            <div className="flex flex-wrap gap-2 justify-center mt-8 animate-fade-in">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 justify-center mt-6 sm:mt-8 animate-fade-in">
               {SUGGESTIONS.map((s) => (
                 <button
                   key={s.label}
                   onClick={() => sendMessage(s.label)}
-                  className="px-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all shadow-sm hover:shadow-md active:scale-95"
+                  className="px-3 py-2 sm:px-4 sm:py-2.5 bg-white border border-gray-200 rounded-full text-xs sm:text-sm text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all shadow-sm hover:shadow-md active:scale-95"
                 >
-                  <span className="mr-1.5">{s.icon}</span>
+                  <span className="mr-1">{s.icon}</span>
                   {s.label}
                 </button>
               ))}

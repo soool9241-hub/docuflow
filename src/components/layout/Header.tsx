@@ -36,7 +36,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-20 bg-white border-b border-gray-200">
-      <div className="flex items-center justify-between px-4 py-3 lg:px-8">
+      <div className="flex items-center justify-between px-3 py-2 lg:px-8 lg:py-3">
         {/* Left: Mobile menu + Title */}
         <div className="flex items-center gap-3">
           <button
@@ -47,7 +47,7 @@ export default function Header() {
             <Menu className="w-5 h-5" />
           </button>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+            <h2 className="text-lg lg:text-xl font-bold text-gray-900">{title}</h2>
           </div>
         </div>
 
@@ -80,7 +80,7 @@ export default function Header() {
           </button>
 
           {/* User avatar */}
-          <div className="ml-2 flex items-center gap-2">
+          <div className="ml-2 hidden sm:flex items-center gap-2">
             <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm font-semibold">
               관
             </div>

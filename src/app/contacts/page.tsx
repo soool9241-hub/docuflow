@@ -243,19 +243,19 @@ export default function ContactsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">거래처 관리</h1>
           <p className="text-gray-500 mt-1">거래처 정보를 등록하고 관리하세요.</p>
         </div>
-        <Button onClick={openAddModal}>
+        <Button onClick={openAddModal} className="self-start sm:self-auto">
           <Plus size={16} />
           새 거래처 추가
         </Button>
       </div>
 
       {/* Search */}
-      <div className="relative max-w-md">
+      <div className="relative w-full md:max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
           type="text"
@@ -289,7 +289,60 @@ export default function ContactsPage() {
           )}
         </Card>
       ) : (
-        <Card padding="none" className="overflow-hidden">
+        <>
+        {/* Mobile card layout */}
+        <div className="md:hidden space-y-3">
+          {filteredContacts.map((contact) => (
+            <Card key={contact.id} className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                    <Building2 className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{contact.company_name}</p>
+                    <p className="text-xs text-gray-500">{contact.representative}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1 text-xs text-gray-600 mt-3">
+                <p className="font-mono">{contact.business_number}</p>
+                {contact.phone && <p>{contact.phone}</p>}
+                {contact.email && <p>{contact.email}</p>}
+              </div>
+              <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => openEditModal(contact)}
+                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="수정"
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
+                  onClick={() => handleDelete(contact)}
+                  disabled={deletingId === contact.id}
+                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                  title="삭제"
+                >
+                  {deletingId === contact.id ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={16} />
+                  )}
+                </button>
+              </div>
+            </Card>
+          ))}
+          <div className="px-2 py-2">
+            <p className="text-xs text-gray-500">
+              총 {filteredContacts.length}개의 거래처
+              {searchQuery && ` (검색 결과)`}
+            </p>
+          </div>
+        </div>
+
+        {/* Desktop table layout */}
+        <Card padding="none" className="overflow-hidden hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -374,6 +427,7 @@ export default function ContactsPage() {
             </p>
           </div>
         </Card>
+        </>
       )}
 
       {/* Add / Edit Modal */}

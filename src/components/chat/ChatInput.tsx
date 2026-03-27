@@ -35,8 +35,8 @@ export default function ChatInput({ value, onChange, onSend, disabled = false, p
   const canSend = value.trim().length > 0 && !disabled
 
   return (
-    <div className="border-t border-gray-200 bg-white p-4">
-      <div className="flex items-end gap-3 max-w-4xl mx-auto">
+    <div className="border-t border-gray-200 bg-white p-3 sm:p-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="flex items-end gap-2 sm:gap-3 max-w-4xl mx-auto">
         <div className="flex-1 relative">
           <textarea
             ref={textareaRef}
@@ -53,7 +53,7 @@ export default function ChatInput({ value, onChange, onSend, disabled = false, p
         <button
           onClick={onSend}
           disabled={!canSend}
-          className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 ${
+          className={`flex-shrink-0 w-12 h-12 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center transition-all duration-200 ${
             canSend
               ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg active:scale-95'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'

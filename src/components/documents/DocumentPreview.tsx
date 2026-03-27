@@ -28,13 +28,13 @@ export default function DocumentPreview({ document, type }: DocumentPreviewProps
   const receiver = document.receiver_info || {}
 
   return (
-    <div className="bg-white border border-gray-300 shadow-lg max-w-[800px] mx-auto print:shadow-none print:border-none">
+    <div className="bg-white border border-gray-300 shadow-lg max-w-[800px] mx-auto print:shadow-none print:border-none text-xs sm:text-sm">
       {/* Document Header */}
-      <div className="border-b-4 border-blue-800 px-8 pt-8 pb-4">
-        <h1 className="text-3xl font-bold text-center text-blue-900 tracking-widest mb-2">
+      <div className="border-b-4 border-blue-800 px-4 sm:px-8 pt-6 sm:pt-8 pb-4">
+        <h1 className="text-xl sm:text-3xl font-bold text-center text-blue-900 tracking-widest mb-2">
           {typeLabel}
         </h1>
-        <div className="flex justify-between text-sm text-gray-600 mt-4">
+        <div className="flex justify-between text-xs sm:text-sm text-gray-600 mt-4">
           <span>서류번호: {document.document_number || '-'}</span>
           <span>
             발행일:{' '}
@@ -46,16 +46,16 @@ export default function DocumentPreview({ document, type }: DocumentPreviewProps
       </div>
 
       {/* Issuer / Receiver Info */}
-      <div className="grid grid-cols-2 gap-0 border-b border-gray-300">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 border-b border-gray-300">
         {/* Issuer */}
-        <div className="p-6 border-r border-gray-300">
+        <div className="p-3 sm:p-6 border-b sm:border-b-0 sm:border-r border-gray-300">
           <h3 className="text-sm font-bold text-gray-500 mb-3 tracking-wider">
             공급자 (발행인)
           </h3>
-          <table className="text-sm w-full">
+          <table className="w-full">
             <tbody>
               <tr>
-                <td className="py-1 text-gray-500 w-24">상호</td>
+                <td className="py-1 text-gray-500 w-20 sm:w-24">상호</td>
                 <td className="py-1 font-medium">{issuer.company_name || '-'}</td>
               </tr>
               <tr>
@@ -79,14 +79,14 @@ export default function DocumentPreview({ document, type }: DocumentPreviewProps
         </div>
 
         {/* Receiver */}
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <h3 className="text-sm font-bold text-gray-500 mb-3 tracking-wider">
             공급받는자 (거래처)
           </h3>
-          <table className="text-sm w-full">
+          <table className="w-full">
             <tbody>
               <tr>
-                <td className="py-1 text-gray-500 w-24">상호</td>
+                <td className="py-1 text-gray-500 w-20 sm:w-24">상호</td>
                 <td className="py-1 font-medium">{receiver.company_name || '-'}</td>
               </tr>
               <tr>
@@ -112,7 +112,7 @@ export default function DocumentPreview({ document, type }: DocumentPreviewProps
 
       {/* Title */}
       {document.title && (
-        <div className="px-8 py-4 border-b border-gray-200 bg-gray-50">
+        <div className="px-4 sm:px-8 py-3 sm:py-4 border-b border-gray-200 bg-gray-50">
           <p className="text-center font-medium text-gray-800">
             건명: {document.title}
           </p>
@@ -120,19 +120,19 @@ export default function DocumentPreview({ document, type }: DocumentPreviewProps
       )}
 
       {/* Total Summary */}
-      <div className="px-8 py-4 border-b border-gray-300">
-        <div className="flex items-center justify-center gap-12 text-sm">
+      <div className="px-4 sm:px-8 py-3 sm:py-4 border-b border-gray-300">
+        <div className="flex items-center justify-center gap-4 sm:gap-12">
           <div className="text-center">
             <span className="text-gray-500">공급가액</span>
-            <p className="font-bold text-lg">{supplyTotal.toLocaleString()}원</p>
+            <p className="font-bold text-sm sm:text-lg">{supplyTotal.toLocaleString()}원</p>
           </div>
           <div className="text-center">
             <span className="text-gray-500">세액</span>
-            <p className="font-bold text-lg">{taxTotal.toLocaleString()}원</p>
+            <p className="font-bold text-sm sm:text-lg">{taxTotal.toLocaleString()}원</p>
           </div>
           <div className="text-center">
             <span className="text-gray-500">합계금액</span>
-            <p className="font-bold text-xl text-blue-900">
+            <p className="font-bold text-base sm:text-xl text-blue-900">
               {grandTotal.toLocaleString()}원
             </p>
           </div>
@@ -140,8 +140,8 @@ export default function DocumentPreview({ document, type }: DocumentPreviewProps
       </div>
 
       {/* Items Table */}
-      <div className="px-8 py-6">
-        <table className="w-full text-sm border-collapse border border-gray-400">
+      <div className="px-2 sm:px-8 py-4 sm:py-6 overflow-x-auto">
+        <table className="w-full border-collapse border border-gray-400 min-w-[600px]">
           <thead>
             <tr className="bg-blue-50">
               <th className="border border-gray-400 px-2 py-2 text-center w-10">번호</th>
@@ -203,7 +203,7 @@ export default function DocumentPreview({ document, type }: DocumentPreviewProps
 
       {/* Notes */}
       {document.notes && (
-        <div className="px-8 pb-4">
+        <div className="px-4 sm:px-8 pb-4">
           <div className="bg-gray-50 rounded p-4 text-sm text-gray-600">
             <span className="font-medium text-gray-700">비고: </span>
             {document.notes}
@@ -212,7 +212,7 @@ export default function DocumentPreview({ document, type }: DocumentPreviewProps
       )}
 
       {/* Footer / Stamp area */}
-      <div className="px-8 py-6 border-t border-gray-200">
+      <div className="px-4 sm:px-8 py-4 sm:py-6 border-t border-gray-200">
         <div className="flex justify-end items-center gap-8">
           <div className="text-center">
             <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs">

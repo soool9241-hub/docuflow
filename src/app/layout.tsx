@@ -15,6 +15,12 @@ const notoSansKR = Noto_Sans_KR({
 export const metadata: Metadata = {
   title: 'DocuFlow - 서류 자동화 시스템',
   description: '거래처 관리, 서류 생성, AI 기반 서류 자동화 시스템',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 };
 
 export default function RootLayout({
@@ -29,7 +35,7 @@ export default function RootLayout({
           <Sidebar />
           <div className="flex-1 flex flex-col overflow-hidden">
             <Header />
-            <main className="flex-1 overflow-y-auto bg-gray-50 p-4 lg:p-8">
+            <main className="flex-1 overflow-y-auto bg-gray-50 p-3 sm:p-4 lg:p-8">
               {children}
             </main>
           </div>

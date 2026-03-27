@@ -234,7 +234,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Header */}
         <div>
@@ -246,8 +246,8 @@ export default function SettingsPage() {
 
         {/* 1. Company Info */}
         <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
-            <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center gap-3">
+            <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
               <Building2 size={18} className="text-blue-600" />
             </div>
             <div>
@@ -255,7 +255,7 @@ export default function SettingsPage() {
               <p className="text-xs text-gray-400">서류에 표시될 발신자 정보입니다</p>
             </div>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <InputField
                 label="상호"
@@ -318,17 +318,17 @@ export default function SettingsPage() {
 
         {/* 2. Supabase */}
         <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Database size={18} className="text-green-600" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-base font-semibold text-gray-900">Supabase 연동</h2>
                 <p className="text-xs text-gray-400">데이터베이스 및 스토리지</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <StatusIcon service="supabase" />
               <button
                 onClick={() => testConnection('supabase')}
@@ -336,11 +336,12 @@ export default function SettingsPage() {
                 className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
               >
                 <RefreshCw size={12} />
-                연결 테스트
+                <span className="hidden sm:inline">연결 테스트</span>
+                <span className="sm:hidden">테스트</span>
               </button>
             </div>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             <InputField
               label="Supabase URL"
               value={supabaseSettings.url}
@@ -367,17 +368,17 @@ export default function SettingsPage() {
 
         {/* 3. Solapi */}
         <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-purple-100 rounded-xl flex items-center justify-center">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
                 <MessageSquare size={18} className="text-purple-600" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-base font-semibold text-gray-900">Solapi 연동</h2>
                 <p className="text-xs text-gray-400">SMS / 알림톡 발송</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <StatusIcon service="solapi" />
               <button
                 onClick={() => testConnection('solapi')}
@@ -385,11 +386,12 @@ export default function SettingsPage() {
                 className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
               >
                 <RefreshCw size={12} />
-                연결 테스트
+                <span className="hidden sm:inline">연결 테스트</span>
+                <span className="sm:hidden">테스트</span>
               </button>
             </div>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <PasswordField
                 label="API Key"
@@ -426,17 +428,17 @@ export default function SettingsPage() {
 
         {/* 4. Email */}
         <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Mail size={18} className="text-orange-600" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-base font-semibold text-gray-900">이메일 설정</h2>
                 <p className="text-xs text-gray-400">SMTP 서버를 통한 이메일 발송</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <StatusIcon service="email" />
               <button
                 onClick={() => testConnection('email')}
@@ -444,11 +446,12 @@ export default function SettingsPage() {
                 className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
               >
                 <RefreshCw size={12} />
-                연결 테스트
+                <span className="hidden sm:inline">연결 테스트</span>
+                <span className="sm:hidden">테스트</span>
               </button>
             </div>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <InputField
                 label="SMTP 호스트"
@@ -488,17 +491,17 @@ export default function SettingsPage() {
 
         {/* 5. AI Settings */}
         <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Brain size={18} className="text-indigo-600" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-base font-semibold text-gray-900">AI 설정</h2>
                 <p className="text-xs text-gray-400">AI 서류 작성 모델 설정</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <StatusIcon service="ai" />
               <button
                 onClick={() => testConnection('ai')}
@@ -506,11 +509,12 @@ export default function SettingsPage() {
                 className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
               >
                 <RefreshCw size={12} />
-                연결 테스트
+                <span className="hidden sm:inline">연결 테스트</span>
+                <span className="sm:hidden">테스트</span>
               </button>
             </div>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             <PasswordField
               label="API Key"
               value={aiSettings.api_key}
@@ -627,7 +631,7 @@ function SaveButton({ onClick, loading }: { onClick: () => void; loading: boolea
     <button
       onClick={onClick}
       disabled={loading}
-      className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      className="w-full sm:w-auto px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
     >
       {loading ? (
         <>

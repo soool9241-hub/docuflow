@@ -392,7 +392,7 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div>
@@ -403,10 +403,10 @@ export default function UploadPage() {
         </div>
 
         {/* Tab Selector */}
-        <div className="flex gap-1 bg-gray-200 rounded-xl p-1 w-fit">
+        <div className="flex gap-1 bg-gray-200 rounded-xl p-1 w-full sm:w-fit">
           <button
             onClick={() => { setActiveTab('file'); resetUpload() }}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'file'
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
@@ -417,7 +417,7 @@ export default function UploadPage() {
           </button>
           <button
             onClick={() => { setActiveTab('camera'); resetUpload() }}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'camera'
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
@@ -437,7 +437,7 @@ export default function UploadPage() {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all ${
+                className={`border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center cursor-pointer transition-all ${
                   isDragging
                     ? 'border-blue-500 bg-blue-50 scale-[1.01]'
                     : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-gray-50'
@@ -663,12 +663,12 @@ export default function UploadPage() {
                   </button>
                 </div>
               ) : cameraStream ? (
-                <div className="relative">
+                <div className="relative fixed inset-0 z-50 sm:static sm:z-auto bg-black">
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
-                    className="w-full max-h-[500px] object-contain bg-black"
+                    className="w-full h-full sm:max-h-[500px] object-contain bg-black"
                   />
                   <canvas ref={canvasRef} className="hidden" />
                   <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4">

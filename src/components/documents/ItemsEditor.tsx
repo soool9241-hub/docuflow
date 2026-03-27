@@ -59,8 +59,8 @@ export default function ItemsEditor({ items, onChange }: ItemsEditorProps) {
 
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
+      <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+        <table className="w-full text-sm border-collapse min-w-[700px]">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-3 py-2 text-left font-medium text-gray-600 w-8">번호</th>
@@ -130,7 +130,7 @@ export default function ItemsEditor({ items, onChange }: ItemsEditorProps) {
                     type="button"
                     onClick={() => removeItem(index)}
                     disabled={items.length <= 1}
-                    className="text-red-400 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed p-1"
+                    className="text-red-400 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed p-2 min-w-[36px] min-h-[36px] flex items-center justify-center"
                     title="항목 삭제"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,8 +144,8 @@ export default function ItemsEditor({ items, onChange }: ItemsEditorProps) {
         </table>
       </div>
 
-      <div className="flex items-center justify-between">
-        <Button variant="outline" size="sm" onClick={addItem} type="button">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <Button variant="outline" size="sm" onClick={addItem} type="button" className="min-h-[44px]">
           + 항목 추가
         </Button>
 

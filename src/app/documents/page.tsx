@@ -112,14 +112,14 @@ export default function DocumentsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">서류 관리</h1>
           <p className="text-sm text-gray-500 mt-1">
             총 {totalCount}건의 서류
           </p>
         </div>
-        <Button onClick={() => router.push('/documents/new')}>
+        <Button onClick={() => router.push('/documents/new')} className="w-full sm:w-auto">
           + 새 서류 작성
         </Button>
       </div>
@@ -130,10 +130,10 @@ export default function DocumentsPage() {
           {/* Type filter tabs */}
           <div>
             <label className="text-xs font-medium text-gray-500 mb-2 block">서류 종류</label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-nowrap gap-2 overflow-x-auto -mx-3 px-3 pb-2">
               <button
                 onClick={() => { setTypeFilter('all'); setPage(1) }}
-                className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
+                className={`px-3 py-1.5 text-sm rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
                   typeFilter === 'all'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -145,7 +145,7 @@ export default function DocumentsPage() {
                 <button
                   key={key}
                   onClick={() => { setTypeFilter(key); setPage(1) }}
-                  className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
+                  className={`px-3 py-1.5 text-sm rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
                     typeFilter === key
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -158,7 +158,7 @@ export default function DocumentsPage() {
           </div>
 
           {/* Status filter + Search */}
-          <div className="flex items-end gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
             <div>
               <label className="text-xs font-medium text-gray-500 mb-2 block">상태</label>
               <div className="flex gap-2">
@@ -190,7 +190,7 @@ export default function DocumentsPage() {
               </div>
             </div>
 
-            <div className="flex-1" />
+            <div className="hidden sm:block flex-1" />
 
             <div className="flex gap-2">
               <input
@@ -199,7 +199,7 @@ export default function DocumentsPage() {
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder="제목 또는 서류번호 검색"
-                className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64"
               />
               <Button variant="secondary" size="md" onClick={handleSearch}>
                 검색
@@ -242,92 +242,151 @@ export default function DocumentsPage() {
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">서류번호</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">종류</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">제목</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">거래처</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">금액</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-600">상태</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">작성일</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-600">액션</th>
-                </tr>
-              </thead>
-              <tbody>
-                {documents.map((doc) => (
-                  <tr
-                    key={doc.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                      {doc.document_number || '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
-                          TYPE_COLORS[doc.type as DocumentType] || 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {DOCUMENT_TYPE_LABELS[doc.type as DocumentType] || doc.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 max-w-[200px] truncate">
+          <>
+            {/* Mobile Card Layout */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {documents.map((doc) => (
+                <div key={doc.id} className="p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0 ${
+                        TYPE_COLORS[doc.type as DocumentType] || 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {DOCUMENT_TYPE_LABELS[doc.type as DocumentType] || doc.type}
+                    </span>
+                    <span className="font-medium text-gray-900 text-sm truncate">
                       {doc.title || '(제목 없음)'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {doc.contacts?.company_name || doc.receiver_info?.company_name || '-'}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium">
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span className="font-mono">{doc.document_number || '-'}</span>
+                    <span>{new Date(doc.created_at).toLocaleDateString('ko-KR')}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-sm">
                       {((doc.total_amount || 0) + (doc.tax_amount || 0)).toLocaleString()}원
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span
-                        className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
-                          STATUS_COLORS[doc.status as DocumentStatus] || 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {STATUS_LABELS[doc.status as DocumentStatus] || doc.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
-                      {new Date(doc.created_at).toLocaleDateString('ko-KR')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => router.push(`/documents/${doc.id}`)}
-                          className="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        >
-                          보기
-                        </button>
-                        <button
-                          onClick={() => handleSend(doc.id)}
-                          className="px-2 py-1 text-xs text-green-600 hover:bg-green-50 rounded transition-colors"
-                        >
-                          발송
-                        </button>
-                        <button
-                          onClick={() => handleDelete(doc.id)}
-                          className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    </td>
+                    </span>
+                    <span
+                      className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
+                        STATUS_COLORS[doc.status as DocumentStatus] || 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {STATUS_LABELS[doc.status as DocumentStatus] || doc.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => router.push(`/documents/${doc.id}`)}
+                      className="flex-1 px-3 py-2 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-center"
+                    >
+                      보기
+                    </button>
+                    <button
+                      onClick={() => handleSend(doc.id)}
+                      className="flex-1 px-3 py-2 text-xs text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors text-center"
+                    >
+                      발송
+                    </button>
+                    <button
+                      onClick={() => handleDelete(doc.id)}
+                      className="flex-1 px-3 py-2 text-xs text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-center"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table Layout */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">서류번호</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">종류</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">제목</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">거래처</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-600">금액</th>
+                    <th className="px-4 py-3 text-center font-medium text-gray-600">상태</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">작성일</th>
+                    <th className="px-4 py-3 text-center font-medium text-gray-600">액션</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {documents.map((doc) => (
+                    <tr
+                      key={doc.id}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 py-3 font-mono text-xs text-gray-500">
+                        {doc.document_number || '-'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
+                            TYPE_COLORS[doc.type as DocumentType] || 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {DOCUMENT_TYPE_LABELS[doc.type as DocumentType] || doc.type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-gray-900 max-w-[200px] truncate">
+                        {doc.title || '(제목 없음)'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {doc.contacts?.company_name || doc.receiver_info?.company_name || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-right font-medium">
+                        {((doc.total_amount || 0) + (doc.tax_amount || 0)).toLocaleString()}원
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span
+                          className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
+                            STATUS_COLORS[doc.status as DocumentStatus] || 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {STATUS_LABELS[doc.status as DocumentStatus] || doc.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {new Date(doc.created_at).toLocaleDateString('ko-KR')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => router.push(`/documents/${doc.id}`)}
+                            className="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          >
+                            보기
+                          </button>
+                          <button
+                            onClick={() => handleSend(doc.id)}
+                            className="px-2 py-1 text-xs text-green-600 hover:bg-green-50 rounded transition-colors"
+                          >
+                            발송
+                          </button>
+                          <button
+                            onClick={() => handleDelete(doc.id)}
+                            className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-            <p className="text-sm text-gray-500">
+            <p className="text-xs sm:text-sm text-gray-500">
               {(page - 1) * PAGE_SIZE + 1} - {Math.min(page * PAGE_SIZE, totalCount)}건 / 총{' '}
               {totalCount}건
             </p>
@@ -339,31 +398,36 @@ export default function DocumentsPage() {
               >
                 이전
               </button>
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                let pageNum: number
-                if (totalPages <= 5) {
-                  pageNum = i + 1
-                } else if (page <= 3) {
-                  pageNum = i + 1
-                } else if (page >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i
-                } else {
-                  pageNum = page - 2 + i
-                }
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setPage(pageNum)}
-                    className={`px-3 py-1.5 text-sm rounded transition-colors ${
-                      page === pageNum
-                        ? 'bg-blue-600 text-white'
-                        : 'border border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                )
-              })}
+              <span className="sm:hidden px-2 py-1.5 text-sm text-gray-500">
+                {page} / {totalPages}
+              </span>
+              <div className="hidden sm:flex gap-1">
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let pageNum: number
+                  if (totalPages <= 5) {
+                    pageNum = i + 1
+                  } else if (page <= 3) {
+                    pageNum = i + 1
+                  } else if (page >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i
+                  } else {
+                    pageNum = page - 2 + i
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                        page === pageNum
+                          ? 'bg-blue-600 text-white'
+                          : 'border border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  )
+                })}
+              </div>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
