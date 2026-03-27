@@ -1,9 +1,10 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, Search, Menu, LogOut } from 'lucide-react';
+import { Search, Menu, LogOut } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import NotificationBell from '@/components/layout/NotificationBell';
 
 const routeTitles: Record<string, string> = {
   '/dashboard': '대시보드',
@@ -29,7 +30,6 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const title = getPageTitle(pathname);
-  const [notificationCount] = useState(3);
   const { user, signOut } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -88,19 +88,9 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Right: Notifications */}
+        {/* Right: Notifications + User */}
         <div className="flex items-center gap-2">
-          <button
-            className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="알림"
-          >
-            <Bell className="w-5 h-5" />
-            {notificationCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4.5 h-4.5 min-w-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
-                {notificationCount}
-              </span>
-            )}
-          </button>
+          <NotificationBell />
 
           {/* User avatar */}
           <div className="ml-2 hidden sm:flex items-center gap-2 relative" ref={userMenuRef}>

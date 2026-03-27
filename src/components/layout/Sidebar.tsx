@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Layout,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -21,6 +22,7 @@ const navItems = [
   { label: '대시보드', icon: LayoutDashboard, href: '/dashboard' },
   { label: '거래처 관리', icon: Users, href: '/contacts' },
   { label: '서류 관리', icon: FileText, href: '/documents' },
+  { label: '템플릿', icon: Layout, href: '/templates' },
   { label: 'AI 서류 작성', icon: MessageSquare, href: '/chat' },
   { label: '데이터 업로드', icon: Upload, href: '/upload' },
   { label: '설정', icon: Settings, href: '/settings' },

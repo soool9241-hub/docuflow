@@ -89,6 +89,29 @@ export interface CompanyProfile {
   updated_at: string
 }
 
+export interface DocumentTemplate {
+  id: string
+  user_id?: string
+  name: string
+  type: DocumentType
+  contact_id?: string | null
+  items?: any[]
+  notes?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface Notification {
+  id: string
+  user_id?: string
+  type: 'unsent' | 'expiring' | 'summary' | 'info'
+  title: string
+  message: string
+  document_id?: string | null
+  is_read: boolean
+  created_at?: string
+}
+
 export type DocumentStatus = Document['status']
 
 // Re-export database types
@@ -100,3 +123,4 @@ export type DocumentRow = Database['public']['Tables']['documents']['Row']
 export type ChatHistoryRow = Database['public']['Tables']['chat_history']['Row']
 export type SettingsRow = Database['public']['Tables']['settings']['Row']
 export type CompanyProfileRow = Database['public']['Tables']['company_profiles']['Row']
+export type DocumentTemplateRow = Database['public']['Tables']['document_templates']['Row']

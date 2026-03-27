@@ -11,6 +11,7 @@ import {
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import DocumentPreview from '@/components/documents/DocumentPreview'
+import ValidationBadge from '@/components/documents/ValidationBadge'
 import { generateDocumentHTML } from '@/templates/document-html'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -181,6 +182,34 @@ export default function DocumentDetailPage() {
             PDF 다운로드
           </Button>
           <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              const templateName = window.prompt('템플릿 이름을 입력하세요:')
+              if (!templateName || !templateName.trim()) return
+              try {
+                const res = await fetch('/api/templates', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    name: templateName.trim(),
+                    type: document.type,
+                    contact_id: document.contact_id || null,
+                    items: document.items || [],
+                    notes: document.notes || '',
+                  }),
+                })
+                if (!res.ok) throw new Error('저장 실패')
+                alert('템플릿으로 저장되었습니다.')
+              } catch (err) {
+                console.error('템플릿 저장 실패:', err)
+                alert('템플릿 저장에 실패했습니다.')
+              }
+            }}
+          >
+            템플릿으로 저장
+          </Button>
+          <Button
             variant="secondary"
             size="sm"
             onClick={() => {
@@ -201,6 +230,9 @@ export default function DocumentDetailPage() {
           </Button>
         </div>
       </div>
+
+      {/* AI Validation */}
+      <ValidationBadge documentId={id} document={document} />
 
       {/* Document Info Summary */}
       <Card padding="md">

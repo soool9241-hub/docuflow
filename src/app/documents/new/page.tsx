@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import {
@@ -14,6 +14,7 @@ import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import ItemsEditor, { createEmptyItem } from '@/components/documents/ItemsEditor'
 import DocumentPreview from '@/components/documents/DocumentPreview'
+import ValidationBadge from '@/components/documents/ValidationBadge'
 
 const STEPS = ['서류 종류 선택', '거래처 선택', '항목 입력', '추가 정보', '미리보기 & 저장']
 
@@ -41,9 +42,11 @@ const TYPE_DESCRIPTIONS: Record<DocumentType, string> = {
 
 export default function NewDocumentPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [templateLoaded, setTemplateLoaded] = useState(false)
 
   // Step 1: Document type
   const [docType, setDocType] = useState<DocumentType | null>(null)
@@ -87,6 +90,37 @@ export default function NewDocumentPage() {
     }
     fetchContacts()
   }, [])
+
+  // Load template if template query param is present
+  useEffect(() => {
+    const templateId = searchParams.get('template')
+    if (!templateId || templateLoaded) return
+
+    const loadTemplate = async () => {
+      try {
+        const res = await fetch(`/api/templates/${templateId}`)
+        if (!res.ok) throw new Error('템플릿 로드 실패')
+        const template = await res.json()
+
+        if (template.type) {
+          setDocType(template.type as DocumentType)
+        }
+        if (template.contact_id) {
+          setSelectedContactId(template.contact_id)
+        }
+        if (template.items && Array.isArray(template.items) && template.items.length > 0) {
+          setItems(template.items)
+        }
+        if (template.notes) {
+          setNotes(template.notes)
+        }
+        setTemplateLoaded(true)
+      } catch (err) {
+        console.error('템플릿 로드 실패:', err)
+      }
+    }
+    loadTemplate()
+  }, [searchParams, templateLoaded])
 
   const selectedContact = contacts.find((c) => c.id === selectedContactId)
   const receiverInfo = useManualContact
@@ -455,6 +489,23 @@ export default function NewDocumentPage() {
             <p className="text-sm text-gray-500 mb-6">
               서류 내용을 확인하고 저장하세요.
             </p>
+            {/* AI Validation */}
+            <div className="mb-6">
+              <ValidationBadge
+                documentId="new"
+                document={{
+                  type: docType,
+                  title,
+                  issuer_info: issuerInfo,
+                  receiver_info: receiverInfo,
+                  items,
+                  total_amount: supplyTotal,
+                  tax_amount: taxTotal,
+                  notes,
+                }}
+              />
+            </div>
+
             <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
               <DocumentPreview
                 document={{

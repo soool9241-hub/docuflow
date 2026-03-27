@@ -239,6 +239,46 @@ export type Database = {
           }
         ]
       }
+      document_templates: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          type: string
+          contact_id: string | null
+          items: Json
+          notes: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          name: string
+          type: string
+          contact_id?: string | null
+          items?: Json
+          notes?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          type?: string
+          contact_id?: string | null
+          items?: Json
+          notes?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'document_templates_contact_id_fkey'
+            columns: ['contact_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

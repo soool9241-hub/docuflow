@@ -78,6 +78,22 @@ export async function POST(request: Request) {
       console.error('Failed to update document status:', updateError)
     }
 
+    // Create send-success notification
+    const { error: notifError } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: user.id,
+        type: 'info',
+        title: '문서 발송 완료',
+        message: `"${document.title}" 문서가 성공적으로 발송되었습니다.`,
+        document_id: document_id,
+        is_read: false,
+      })
+
+    if (notifError) {
+      console.error('Failed to create send notification:', notifError)
+    }
+
     return NextResponse.json({
       message: `Document sent successfully via ${method}`,
       document_id,
