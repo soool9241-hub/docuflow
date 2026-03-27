@@ -92,24 +92,43 @@ export default function UploadPage() {
         cameraStream.getTracks().forEach((track) => track.stop())
       }
     }
-  }, [])
+  }, [user])
 
   const loadUploadHistory = async () => {
+    if (!user) return
     try {
-      const stored = localStorage.getItem('upload_history')
-      if (stored) {
-        setUploadHistory(JSON.parse(stored))
+      const { data } = await supabase
+        .from('upload_history')
+        .select('id, file_name, file_type, row_count, status, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      if (data) {
+        setUploadHistory(data.map((d) => ({
+          id: d.id,
+          fileName: d.file_name,
+          fileType: d.file_type,
+          rowCount: d.row_count,
+          status: d.status as 'success' | 'error',
+          createdAt: d.created_at,
+        })))
       }
     } catch {
-      // Ignore localStorage errors
+      // Ignore
     }
   }
 
-  const saveToHistory = (entry: UploadHistoryItem) => {
-    const updated = [entry, ...uploadHistory].slice(0, 20)
-    setUploadHistory(updated)
+  const saveToHistory = async (entry: UploadHistoryItem) => {
+    setUploadHistory((prev) => [entry, ...prev].slice(0, 20))
+    if (!user) return
     try {
-      localStorage.setItem('upload_history', JSON.stringify(updated))
+      await supabase.from('upload_history').insert({
+        user_id: user.id,
+        file_name: entry.fileName,
+        file_type: entry.fileType,
+        row_count: entry.rowCount,
+        status: entry.status,
+      })
     } catch {
       // Ignore
     }
@@ -1256,9 +1275,11 @@ export default function UploadPage() {
                 <h2 className="text-sm font-semibold text-gray-800">업로드 기록</h2>
               </div>
               <button
-                onClick={() => {
+                onClick={async () => {
                   setUploadHistory([])
-                  localStorage.removeItem('upload_history')
+                  if (user) {
+                    await supabase.from('upload_history').delete().eq('user_id', user.id)
+                  }
                 }}
                 className="text-xs text-gray-400 hover:text-red-500 transition-colors"
               >
