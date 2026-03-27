@@ -11,6 +11,21 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
 )
 
+function translateError(msg: string): string {
+  const map: Record<string, string> = {
+    'User already registered': '이미 가입된 이메일입니다.',
+    'Invalid login credentials': '이메일 또는 비밀번호가 올바르지 않습니다.',
+    'Email not confirmed': '이메일 인증이 필요합니다.',
+    'Password should be at least 6 characters': '비밀번호는 6자 이상이어야 합니다.',
+    'Signup requires a valid password': '유효한 비밀번호를 입력해주세요.',
+    'To signup, please provide your email': '이메일을 입력해주세요.',
+    'Unable to validate email address: invalid format': '올바른 이메일 형식을 입력해주세요.',
+    'Email rate limit exceeded': '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+    'For security purposes, you can only request this once every 60 seconds': '보안을 위해 60초에 한 번만 요청할 수 있습니다.',
+  }
+  return map[msg] || msg.replace(/[A-Za-z]/g, '') || '오류가 발생했습니다. 다시 시도해주세요.'
+}
+
 export default function SignupPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -45,7 +60,7 @@ export default function SignupPage() {
       })
 
       if (signUpError) {
-        setError(signUpError.message)
+        setError(translateError(signUpError.message))
         return
       }
 
@@ -63,7 +78,7 @@ export default function SignupPage() {
         }
       }
 
-      setSuccess('회원가입이 완료되었습니다. 이메일을 확인해 주세요.')
+      setSuccess('회원가입이 완료되었습니다!')
 
       // If email confirmation is not required, redirect to dashboard
       if (data.session) {
@@ -82,10 +97,10 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         {/* Logo / App Name */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl mb-4">
-            <span className="text-white text-2xl font-bold">D</span>
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-4">
+            <span className="text-white text-2xl font-bold">문</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">DocuFlow</h1>
+          <h1 className="text-2xl font-bold text-gray-900">문서친구</h1>
           <p className="text-sm text-gray-500 mt-1">서류 자동화 시스템</p>
         </div>
 
@@ -119,7 +134,7 @@ export default function SignupPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@company.com"
+                placeholder="이메일을 입력하세요"
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm
                            placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500
                            focus:border-transparent focus:bg-white transition-all"
