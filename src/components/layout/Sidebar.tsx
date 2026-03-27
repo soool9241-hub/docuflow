@@ -8,11 +8,11 @@ import {
   FileText,
   MessageSquare,
   Upload,
-  Settings,
   ChevronLeft,
   ChevronRight,
   LogOut,
   Layout,
+  User,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -25,7 +25,7 @@ const navItems = [
   { label: '템플릿', icon: Layout, href: '/templates' },
   { label: 'AI 서류 작성', icon: MessageSquare, href: '/chat' },
   { label: '데이터 업로드', icon: Upload, href: '/upload' },
-  { label: '설정', icon: Settings, href: '/settings' },
+  { label: '마이페이지', icon: User, href: '/mypage' },
 ];
 
 export default function Sidebar() {
@@ -64,12 +64,12 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-6 border-b border-slate-700/50">
           <div className={`flex items-center gap-3 ${collapsed ? 'justify-center w-full' : ''}`}>
-            <div className="flex-shrink-0 w-9 h-9 bg-indigo-500 rounded-lg flex items-center justify-center font-bold text-lg">
-              D
+            <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center font-bold text-lg">
+              문
             </div>
             {!collapsed && (
               <div>
-                <h1 className="text-lg font-bold tracking-tight">DocuFlow</h1>
+                <h1 className="text-lg font-bold tracking-tight">문서친구</h1>
                 <p className="text-xs text-slate-400">서류 자동화</p>
               </div>
             )}
