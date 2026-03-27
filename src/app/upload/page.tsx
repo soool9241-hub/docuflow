@@ -14,6 +14,8 @@ import {
   Trash2,
   Eye,
   Clock,
+  User,
+  Users,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -75,6 +77,9 @@ export default function UploadPage() {
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null)
   const [ocrLoading, setOcrLoading] = useState(false)
   const [savingContact, setSavingContact] = useState(false)
+  const [savingMyInfo, setSavingMyInfo] = useState(false)
+  const [multiFiles, setMultiFiles] = useState<File[]>([])
+  const [multiOcrResults, setMultiOcrResults] = useState<{ file: File; result: OCRResult | null; loading: boolean; saved?: 'contact' | 'myinfo' }[]>([])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -175,6 +180,120 @@ export default function UploadPage() {
       toast.error('거래처 저장에 실패했습니다.')
     } finally {
       setSavingContact(false)
+    }
+  }
+
+  const saveOcrAsMyInfo = async () => {
+    if (!ocrResult?.extractedInfo) return
+    const info = ocrResult.extractedInfo
+
+    setSavingMyInfo(true)
+    try {
+      const updateData: Record<string, string> = {}
+      if (info.company_name) updateData.company_name = info.company_name
+      if (info.representative) updateData.representative = info.representative
+      if (info.business_number) updateData.business_number = info.business_number
+      if (info.phone) updateData.phone = info.phone
+      if (info.email) updateData.email = info.email
+      if (info.address) updateData.address = info.address
+      if (info.business_type) updateData.business_type = info.business_type
+      if (info.business_category) updateData.business_category = info.business_category
+
+      const { error } = await supabase
+        .from('company_profiles')
+        .update(updateData)
+        .eq('user_id', user?.id)
+
+      if (error) throw error
+      toast.success('내 회사 정보가 저장되었습니다!')
+    } catch (err) {
+      console.error('My info save error:', err)
+      toast.error('내 정보 저장에 실패했습니다.')
+    } finally {
+      setSavingMyInfo(false)
+    }
+  }
+
+  // --- Multi File Upload ---
+  const handleMultiFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const imageFiles = files.filter(f => {
+      const ext = f.name.split('.').pop()?.toLowerCase()
+      return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext || '')
+    })
+
+    if (imageFiles.length === 0) {
+      toast.error('이미지 파일을 선택해주세요.')
+      return
+    }
+
+    setMultiFiles(imageFiles)
+    const entries = imageFiles.map(f => ({ file: f, result: null as OCRResult | null, loading: true }))
+    setMultiOcrResults(entries)
+
+    // Run OCR on all files
+    imageFiles.forEach(async (f, idx) => {
+      try {
+        const formData = new FormData()
+        formData.append('file', f)
+        const response = await fetch('/api/ocr', { method: 'POST', body: formData })
+        const data = await response.json()
+
+        setMultiOcrResults(prev => prev.map((item, i) =>
+          i === idx ? { ...item, result: response.ok ? data : null, loading: false } : item
+        ))
+      } catch {
+        setMultiOcrResults(prev => prev.map((item, i) =>
+          i === idx ? { ...item, loading: false } : item
+        ))
+      }
+    })
+  }
+
+  const saveMultiAsContact = async (idx: number) => {
+    const item = multiOcrResults[idx]
+    if (!item?.result?.extractedInfo) return
+    const info = item.result.extractedInfo
+
+    try {
+      const { error } = await supabase.from('contacts').insert({
+        company_name: info.company_name || '-',
+        representative: info.representative || '-',
+        business_number: info.business_number || '-',
+        email: info.email || null,
+        phone: info.phone || null,
+        address: info.address || null,
+        memo: info.business_type ? `업태: ${info.business_type}${info.business_category ? ` / 종목: ${info.business_category}` : ''}` : null,
+        user_id: user?.id,
+      })
+      if (error) throw error
+      setMultiOcrResults(prev => prev.map((item, i) => i === idx ? { ...item, saved: 'contact' } : item))
+      toast.success('거래처로 등록되었습니다!')
+    } catch {
+      toast.error('저장에 실패했습니다.')
+    }
+  }
+
+  const saveMultiAsMyInfo = async (idx: number) => {
+    const item = multiOcrResults[idx]
+    if (!item?.result?.extractedInfo) return
+    const info = item.result.extractedInfo
+
+    try {
+      const updateData: Record<string, string> = {}
+      if (info.company_name) updateData.company_name = info.company_name
+      if (info.representative) updateData.representative = info.representative
+      if (info.business_number) updateData.business_number = info.business_number
+      if (info.phone) updateData.phone = info.phone
+      if (info.email) updateData.email = info.email
+      if (info.address) updateData.address = info.address
+
+      const { error } = await supabase.from('company_profiles').update(updateData).eq('user_id', user?.id)
+      if (error) throw error
+      setMultiOcrResults(prev => prev.map((item, i) => i === idx ? { ...item, saved: 'myinfo' } : item))
+      toast.success('내 회사 정보가 저장되었습니다!')
+    } catch {
+      toast.error('저장에 실패했습니다.')
     }
   }
 
@@ -471,6 +590,8 @@ export default function UploadPage() {
     setCapturedImage(null)
     setOcrResult(null)
     setOcrLoading(false)
+    setMultiFiles([])
+    setMultiOcrResults([])
     stopCamera()
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -482,7 +603,7 @@ export default function UploadPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">데이터 업로드</h1>
           <p className="text-sm text-gray-500 mt-1">
-            CSV 파일이나 이미지를 업로드하여 거래처 정보를 한 번에 등록할 수 있습니다.
+            CSV 파일이나 이미지를 업로드하여 내 정보 또는 거래처를 등록할 수 있습니다. 여러 파일 동시 업로드 가능!
           </p>
         </div>
 
@@ -531,7 +652,15 @@ export default function UploadPage() {
                   ref={fileInputRef}
                   type="file"
                   accept=".csv,.jpg,.jpeg,.png,.gif,.webp"
-                  onChange={handleFileSelect}
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || [])
+                    if (files.length > 1) {
+                      handleMultiFileSelect(e)
+                    } else if (files.length === 1) {
+                      processFile(files[0])
+                    }
+                  }}
                   className="hidden"
                 />
                 <div className="flex flex-col items-center gap-4">
@@ -545,7 +674,7 @@ export default function UploadPage() {
                       {isDragging ? '여기에 놓으세요' : '파일을 드래그하거나 클릭하여 업로드'}
                     </p>
                     <p className="text-sm text-gray-400 mt-1">
-                      CSV, JPG, PNG, GIF, WebP (최대 10MB)
+                      CSV, JPG, PNG, GIF, WebP (최대 10MB) · 여러 파일 선택 가능
                     </p>
                   </div>
                 </div>
@@ -632,17 +761,30 @@ export default function UploadPage() {
                                 </div>
                               )}
                             </div>
-                            <button
-                              onClick={saveOcrAsContact}
-                              disabled={savingContact}
-                              className="mt-4 w-full px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                              {savingContact ? (
-                                <><Loader2 size={16} className="animate-spin" /> 저장 중...</>
-                              ) : (
-                                <><CheckCircle2 size={16} /> 거래처로 등록</>
-                              )}
-                            </button>
+                            <div className="mt-4 grid grid-cols-2 gap-2">
+                              <button
+                                onClick={saveOcrAsMyInfo}
+                                disabled={savingMyInfo}
+                                className="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                              >
+                                {savingMyInfo ? (
+                                  <><Loader2 size={16} className="animate-spin" /> 저장 중...</>
+                                ) : (
+                                  <><User size={16} /> 내 정보로 저장</>
+                                )}
+                              </button>
+                              <button
+                                onClick={saveOcrAsContact}
+                                disabled={savingContact}
+                                className="px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                              >
+                                {savingContact ? (
+                                  <><Loader2 size={16} className="animate-spin" /> 저장 중...</>
+                                ) : (
+                                  <><Users size={16} /> 거래처로 등록</>
+                                )}
+                              </button>
+                            </div>
                           </div>
                         )}
                         {/* Full Text */}
@@ -899,17 +1041,30 @@ export default function UploadPage() {
                               </div>
                             )}
                           </div>
-                          <button
-                            onClick={saveOcrAsContact}
-                            disabled={savingContact}
-                            className="mt-4 w-full px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                          >
-                            {savingContact ? (
-                              <><Loader2 size={16} className="animate-spin" /> 저장 중...</>
-                            ) : (
-                              <><CheckCircle2 size={16} /> 거래처로 등록</>
-                            )}
-                          </button>
+                          <div className="mt-4 grid grid-cols-2 gap-2">
+                            <button
+                              onClick={saveOcrAsMyInfo}
+                              disabled={savingMyInfo}
+                              className="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                              {savingMyInfo ? (
+                                <><Loader2 size={16} className="animate-spin" /> 저장 중...</>
+                              ) : (
+                                <><User size={16} /> 내 정보로 저장</>
+                              )}
+                            </button>
+                            <button
+                              onClick={saveOcrAsContact}
+                              disabled={savingContact}
+                              className="px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                              {savingContact ? (
+                                <><Loader2 size={16} className="animate-spin" /> 저장 중...</>
+                              ) : (
+                                <><Users size={16} /> 거래처로 등록</>
+                              )}
+                            </button>
+                          </div>
                         </div>
                       )}
                       <details className="bg-gray-50 border border-gray-200 rounded-xl">
@@ -938,6 +1093,86 @@ export default function UploadPage() {
                   </div>
                 </div>
               ) : null}
+            </div>
+          </div>
+        )}
+
+        {/* Multi File OCR Results */}
+        {multiOcrResults.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ImageIcon size={16} className="text-blue-600" />
+                <h2 className="text-sm font-semibold text-gray-800">
+                  다중 이미지 OCR 결과
+                  <span className="ml-2 text-xs font-normal text-gray-400">({multiOcrResults.length}건)</span>
+                </h2>
+              </div>
+              <button
+                onClick={() => { setMultiFiles([]); setMultiOcrResults([]) }}
+                className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+              >
+                전체 삭제
+              </button>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {multiOcrResults.map((item, idx) => (
+                <div key={idx} className="p-4 sm:p-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">{idx + 1}</span>
+                    <span className="text-sm font-medium text-gray-700 truncate">{item.file.name}</span>
+                    {item.loading && <Loader2 size={14} className="text-blue-600 animate-spin" />}
+                    {item.saved === 'contact' && <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded">거래처 저장됨</span>}
+                    {item.saved === 'myinfo' && <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">내 정보 저장됨</span>}
+                  </div>
+                  {item.result && Object.keys(item.result.extractedInfo).length > 0 && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-sm">
+                        {item.result.extractedInfo.company_name && (
+                          <div><span className="text-xs text-gray-400">상호명</span> <span className="font-medium">{item.result.extractedInfo.company_name}</span></div>
+                        )}
+                        {item.result.extractedInfo.representative && (
+                          <div><span className="text-xs text-gray-400">대표자</span> <span className="font-medium">{item.result.extractedInfo.representative}</span></div>
+                        )}
+                        {item.result.extractedInfo.business_number && (
+                          <div><span className="text-xs text-gray-400">사업자번호</span> <span className="font-medium font-mono">{item.result.extractedInfo.business_number}</span></div>
+                        )}
+                        {item.result.extractedInfo.phone && (
+                          <div><span className="text-xs text-gray-400">전화</span> <span className="font-medium">{item.result.extractedInfo.phone}</span></div>
+                        )}
+                        {item.result.extractedInfo.email && (
+                          <div><span className="text-xs text-gray-400">이메일</span> <span className="font-medium">{item.result.extractedInfo.email}</span></div>
+                        )}
+                        {item.result.extractedInfo.address && (
+                          <div className="sm:col-span-3"><span className="text-xs text-gray-400">주소</span> <span className="font-medium">{item.result.extractedInfo.address}</span></div>
+                        )}
+                      </div>
+                      {!item.saved && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => saveMultiAsMyInfo(idx)}
+                            className="flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+                          >
+                            <User size={14} /> 내 정보로 저장
+                          </button>
+                          <button
+                            onClick={() => saveMultiAsContact(idx)}
+                            className="flex-1 px-3 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-1"
+                          >
+                            <Users size={14} /> 거래처로 등록
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {item.result && Object.keys(item.result.extractedInfo).length === 0 && (
+                    <p className="text-sm text-gray-400">인식된 정보가 없습니다.</p>
+                  )}
+                  {!item.loading && !item.result && (
+                    <p className="text-sm text-red-400">OCR 처리에 실패했습니다.</p>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}
