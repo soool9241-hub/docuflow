@@ -297,6 +297,39 @@ export default function UploadPage() {
     }
   }
 
+  const saveAllMultiAsContact = async () => {
+    const unsaved = multiOcrResults
+      .map((item, idx) => ({ item, idx }))
+      .filter(({ item }) => !item.saved && item.result && Object.keys(item.result.extractedInfo).length > 0)
+
+    if (unsaved.length === 0) {
+      toast.error('저장할 항목이 없습니다.')
+      return
+    }
+
+    let successCount = 0
+    for (const { item, idx } of unsaved) {
+      const info = item.result!.extractedInfo
+      try {
+        const { error } = await supabase.from('contacts').insert({
+          company_name: info.company_name || '-',
+          representative: info.representative || '-',
+          business_number: info.business_number || '-',
+          email: info.email || null,
+          phone: info.phone || null,
+          address: info.address || null,
+          memo: info.business_type ? `업태: ${info.business_type}${info.business_category ? ` / 종목: ${info.business_category}` : ''}` : null,
+          user_id: user?.id,
+        })
+        if (!error) {
+          setMultiOcrResults(prev => prev.map((item, i) => i === idx ? { ...item, saved: 'contact' } : item))
+          successCount++
+        }
+      } catch { /* skip */ }
+    }
+    toast.success(`${successCount}/${unsaved.length}건 거래처로 일괄 등록 완료!`)
+  }
+
   // --- File Upload ---
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -311,8 +344,36 @@ export default function UploadPage() {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    const droppedFile = e.dataTransfer.files[0]
-    if (droppedFile) processFile(droppedFile)
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 1) {
+      // Multi file - check if images
+      const imageFiles = files.filter(f => {
+        const ext = f.name.split('.').pop()?.toLowerCase()
+        return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext || '')
+      })
+      if (imageFiles.length > 0) {
+        setMultiFiles(imageFiles)
+        const entries = imageFiles.map(f => ({ file: f, result: null as OCRResult | null, loading: true }))
+        setMultiOcrResults(entries)
+        imageFiles.forEach(async (f, idx) => {
+          try {
+            const formData = new FormData()
+            formData.append('file', f)
+            const response = await fetch('/api/ocr', { method: 'POST', body: formData })
+            const data = await response.json()
+            setMultiOcrResults(prev => prev.map((item, i) =>
+              i === idx ? { ...item, result: response.ok ? data : null, loading: false } : item
+            ))
+          } catch {
+            setMultiOcrResults(prev => prev.map((item, i) =>
+              i === idx ? { ...item, loading: false } : item
+            ))
+          }
+        })
+        return
+      }
+    }
+    if (files.length === 1) processFile(files[0])
   }, [])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1108,12 +1169,21 @@ export default function UploadPage() {
                   <span className="ml-2 text-xs font-normal text-gray-400">({multiOcrResults.length}건)</span>
                 </h2>
               </div>
-              <button
-                onClick={() => { setMultiFiles([]); setMultiOcrResults([]) }}
-                className="text-xs text-gray-400 hover:text-red-500 transition-colors"
-              >
-                전체 삭제
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={saveAllMultiAsContact}
+                  disabled={multiOcrResults.some(i => i.loading)}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                >
+                  <Users size={12} /> 전체 거래처 등록
+                </button>
+                <button
+                  onClick={() => { setMultiFiles([]); setMultiOcrResults([]) }}
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  전체 삭제
+                </button>
+              </div>
             </div>
             <div className="divide-y divide-gray-100">
               {multiOcrResults.map((item, idx) => (
