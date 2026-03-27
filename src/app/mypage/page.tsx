@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   User,
@@ -21,10 +21,44 @@ import {
   Calendar,
   Mail,
   Clock,
+  FolderOpen,
+  Upload,
+  Download,
+  Trash2,
+  X,
+  Image as ImageIcon,
+  File as FileIcon,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
+
+interface UserFile {
+  id: string
+  file_name: string
+  file_type: string
+  file_size: number
+  category: string
+  created_at: string
+}
+
+const FILE_CATEGORIES = [
+  '사업자등록증',
+  '통장사본',
+  '인감증명서',
+  '신분증사본',
+  '기타',
+] as const
+
+const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
+  '사업자등록증': { bg: 'bg-blue-100', text: 'text-blue-700' },
+  '통장사본': { bg: 'bg-green-100', text: 'text-green-700' },
+  '인감증명서': { bg: 'bg-purple-100', text: 'text-purple-700' },
+  '신분증사본': { bg: 'bg-orange-100', text: 'text-orange-700' },
+  '기타': { bg: 'bg-gray-100', text: 'text-gray-700' },
+}
 
 interface CompanyInfo {
   company_name: string
@@ -77,9 +111,21 @@ export default function MyPage() {
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+  // File upload state
+  const [files, setFiles] = useState<UserFile[]>([])
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadCategory, setUploadCategory] = useState<string>('기타')
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [previewFile, setPreviewFile] = useState<{ data: string; name: string; type: string } | null>(null)
+  const [previewZoom, setPreviewZoom] = useState(1)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     if (!authLoading && user) {
       loadData()
+      loadFiles()
     }
   }, [authLoading, user])
 
@@ -211,6 +257,150 @@ export default function MyPage() {
       minute: '2-digit',
     })
   }
+
+  // --- File management functions ---
+
+  const loadFiles = async () => {
+    setIsLoadingFiles(true)
+    try {
+      const res = await fetch('/api/files')
+      if (!res.ok) throw new Error('Failed to load files')
+      const data = await res.json()
+      setFiles(data.files || [])
+    } catch (err) {
+      console.error('파일 목록 불러오기 실패:', err)
+    } finally {
+      setIsLoadingFiles(false)
+    }
+  }
+
+  const uploadFiles = async (fileList: FileList | File[]) => {
+    const filesToUpload = Array.from(fileList)
+    if (filesToUpload.length === 0) return
+
+    setIsUploading(true)
+    let successCount = 0
+    let failCount = 0
+
+    for (const file of filesToUpload) {
+      try {
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`${file.name}: 파일 크기는 5MB 이하여야 합니다.`)
+          failCount++
+          continue
+        }
+
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('category', uploadCategory)
+
+        const res = await fetch('/api/files', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!res.ok) {
+          const err = await res.json()
+          throw new Error(err.error || 'Upload failed')
+        }
+
+        successCount++
+      } catch (err: any) {
+        toast.error(`${file.name}: ${err.message || '업로드 실패'}`)
+        failCount++
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`${successCount}개 파일 업로드 완료`)
+      loadFiles()
+    }
+    setIsUploading(false)
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      uploadFiles(e.target.files)
+      e.target.value = ''
+    }
+  }
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragOver(false)
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        uploadFiles(e.dataTransfer.files)
+      }
+    },
+    [uploadCategory]
+  )
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }
+
+  const handlePreview = async (file: UserFile) => {
+    try {
+      const res = await fetch(`/api/files/${file.id}`)
+      if (!res.ok) throw new Error('Failed to load file')
+      const data = await res.json()
+      setPreviewFile({ data: data.file_data, name: data.file_name, type: data.file_type })
+      setPreviewZoom(1)
+    } catch (err) {
+      toast.error('파일 미리보기를 불러올 수 없습니다.')
+    }
+  }
+
+  const handleDownload = async (file: UserFile) => {
+    try {
+      const res = await fetch(`/api/files/${file.id}`)
+      if (!res.ok) throw new Error('Failed to load file')
+      const data = await res.json()
+
+      // Convert base64 data URL to blob
+      const response = await fetch(data.file_data)
+      const blob = await response.blob()
+
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = data.file_name
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      toast.error('파일 다운로드에 실패했습니다.')
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/files/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete')
+      toast.success('파일이 삭제되었습니다.')
+      setFiles((prev) => prev.filter((f) => f.id !== id))
+      setDeleteConfirmId(null)
+    } catch (err) {
+      toast.error('파일 삭제에 실패했습니다.')
+    }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  const isImageType = (type: string) =>
+    type.startsWith('image/')
 
   const emailInitial = user?.email ? user.email.charAt(0).toUpperCase() : '?'
 
@@ -499,7 +689,236 @@ export default function MyPage() {
           </div>
         </section>
 
-        {/* 5. Account Management */}
+        {/* 5. My Document Box */}
+        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center gap-3">
+            <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <FolderOpen size={18} className="text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">내 서류함</h2>
+              <p className="text-xs text-gray-400">사업자등록증, 통장사본 등 서류를 관리합니다</p>
+            </div>
+          </div>
+          <div className="p-4 sm:p-6 space-y-5">
+            {/* Upload area */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">서류 분류</label>
+                  <select
+                    value={uploadCategory}
+                    onChange={(e) => setUploadCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {FILE_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onClick={() => fileInputRef.current?.click()}
+                className={`relative border-2 border-dashed rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-colors ${
+                  isDragOver
+                    ? 'border-blue-400 bg-blue-50'
+                    : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                }`}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".jpg,.jpeg,.png,.gif,.webp,.pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                {isUploading ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 size={32} className="animate-spin text-blue-500" />
+                    <p className="text-sm text-gray-600">업로드 중...</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload size={32} className="text-gray-400" />
+                    <p className="text-sm text-gray-600">
+                      파일을 드래그하거나 클릭하여 업로드
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      JPG, PNG, GIF, WebP, PDF (최대 5MB)
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* File list */}
+            {isLoadingFiles ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 size={24} className="animate-spin text-gray-400" />
+              </div>
+            ) : files.length === 0 ? (
+              <div className="text-center py-8">
+                <FolderOpen size={40} className="mx-auto text-gray-300 mb-2" />
+                <p className="text-sm text-gray-400">업로드된 서류가 없습니다</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {files.map((file) => {
+                  const catColor = CATEGORY_COLORS[file.category] || CATEGORY_COLORS['기타']
+                  return (
+                    <div
+                      key={file.id}
+                      className="border border-gray-200 rounded-2xl p-4 hover:shadow-md transition-shadow group"
+                    >
+                      {/* File icon / thumbnail area */}
+                      <div
+                        className="w-full h-24 bg-gray-50 rounded-xl flex items-center justify-center mb-3 cursor-pointer"
+                        onClick={() => handlePreview(file)}
+                      >
+                        {isImageType(file.file_type) ? (
+                          <ImageIcon size={32} className="text-blue-400" />
+                        ) : (
+                          <FileIcon size={32} className="text-red-400" />
+                        )}
+                      </div>
+
+                      {/* File info */}
+                      <p
+                        className="text-sm font-medium text-gray-900 truncate cursor-pointer hover:text-blue-600"
+                        title={file.file_name}
+                        onClick={() => handlePreview(file)}
+                      >
+                        {file.file_name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${catColor.bg} ${catColor.text}`}
+                        >
+                          {file.category}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {formatFileSize(file.file_size)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(file.created_at).toLocaleDateString('ko-KR')}
+                      </p>
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={() => handleDownload(file)}
+                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                        >
+                          <Download size={13} />
+                          다운로드
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmId(file.id)}
+                          className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+
+                      {/* Delete confirmation */}
+                      {deleteConfirmId === file.id && (
+                        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-xs text-red-700 mb-2">정말 삭제하시겠습니까?</p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleDelete(file.id)}
+                              className="flex-1 px-2 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
+                            >
+                              삭제
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmId(null)}
+                              className="flex-1 px-2 py-1 text-xs font-medium text-gray-700 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
+                            >
+                              취소
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Preview Modal */}
+        {previewFile && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+              {/* Modal header */}
+              <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-gray-200 flex-shrink-0">
+                <h3 className="text-sm font-semibold text-gray-900 truncate pr-4">
+                  {previewFile.name}
+                </h3>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {isImageType(previewFile.type) && (
+                    <>
+                      <button
+                        onClick={() => setPreviewZoom((z) => Math.max(0.25, z - 0.25))}
+                        className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="축소"
+                      >
+                        <ZoomOut size={18} />
+                      </button>
+                      <span className="text-xs text-gray-500 min-w-[3rem] text-center">
+                        {Math.round(previewZoom * 100)}%
+                      </span>
+                      <button
+                        onClick={() => setPreviewZoom((z) => Math.min(3, z + 0.25))}
+                        className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="확대"
+                      >
+                        <ZoomIn size={18} />
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => setPreviewFile(null)}
+                    className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+              {/* Modal body */}
+              <div className="flex-1 overflow-auto p-4 sm:p-6 flex items-center justify-center bg-gray-50">
+                {isImageType(previewFile.type) ? (
+                  <img
+                    src={previewFile.data}
+                    alt={previewFile.name}
+                    style={{ transform: `scale(${previewZoom})`, transformOrigin: 'center' }}
+                    className="max-w-full max-h-full object-contain transition-transform"
+                  />
+                ) : previewFile.type === 'application/pdf' ? (
+                  <iframe
+                    src={previewFile.data}
+                    title={previewFile.name}
+                    className="w-full h-[70vh] border-0 rounded-lg"
+                  />
+                ) : (
+                  <p className="text-sm text-gray-500">미리보기를 지원하지 않는 형식입니다.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 6. Account Management */}
         <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center gap-3">
             <div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">

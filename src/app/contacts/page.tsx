@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -13,6 +13,8 @@ import {
   Loader2,
   AlertCircle,
   Building2,
+  Camera,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -61,6 +63,9 @@ export default function ContactsPage() {
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof ContactForm, string>>>({})
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [ocrLoading, setOcrLoading] = useState(false)
+  const [ocrPreview, setOcrPreview] = useState<string | null>(null)
+  const ocrInputRef = useRef<HTMLInputElement>(null)
 
   const fetchContacts = useCallback(async () => {
     try {
@@ -98,10 +103,51 @@ export default function ContactsPage() {
     )
   })
 
+  async function handleOcrUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Show preview
+    const reader = new FileReader()
+    reader.onload = (ev) => setOcrPreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
+
+    setOcrLoading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await fetch('/api/ocr', { method: 'POST', body: formData })
+      const data = await response.json()
+
+      if (response.ok && data.extractedInfo) {
+        const info = data.extractedInfo
+        setForm(prev => ({
+          ...prev,
+          company_name: info.company_name || prev.company_name,
+          representative: info.representative || prev.representative,
+          business_number: info.business_number ? formatBusinessNumber(info.business_number.replace(/-/g, '')) : prev.business_number,
+          email: info.email || prev.email,
+          phone: info.phone || prev.phone,
+          address: info.address || prev.address,
+          memo: info.business_type ? `업태: ${info.business_type}${info.business_category ? ` / 종목: ${info.business_category}` : ''}` : prev.memo,
+        }))
+        toast.success(`${data.fieldCount}개 항목 인식 완료! 정보를 확인해주세요.`)
+      } else {
+        toast.error(data.error || 'OCR 인식에 실패했습니다.')
+      }
+    } catch {
+      toast.error('OCR 처리 중 오류가 발생했습니다.')
+    } finally {
+      setOcrLoading(false)
+      if (ocrInputRef.current) ocrInputRef.current.value = ''
+    }
+  }
+
   function openAddModal() {
     setEditingContact(null)
     setForm(EMPTY_FORM)
     setFormErrors({})
+    setOcrPreview(null)
     setModalOpen(true)
   }
 
@@ -440,6 +486,54 @@ export default function ContactsPage() {
         size="lg"
       >
         <div className="space-y-4">
+          {/* OCR 사진 업로드 */}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <input
+              ref={ocrInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleOcrUpload}
+            />
+            {ocrPreview ? (
+              <div className="space-y-3">
+                <div className="relative w-full max-h-48 overflow-hidden rounded-lg border border-blue-200">
+                  <img src={ocrPreview} alt="OCR 미리보기" className="w-full h-full object-contain bg-white" />
+                </div>
+                {ocrLoading && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-blue-600">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    OCR 판독 중...
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => ocrInputRef.current?.click()}
+                  disabled={ocrLoading}
+                  className="w-full py-2 text-sm text-blue-600 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  다른 사진으로 변경
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => ocrInputRef.current?.click()}
+                disabled={ocrLoading}
+                className="w-full flex flex-col items-center gap-2 py-4 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Camera className="w-6 h-6" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium">사진으로 자동입력</p>
+                  <p className="text-xs text-blue-400 mt-0.5">명함이나 사업자등록증을 촬영하세요</p>
+                </div>
+              </button>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="회사명 *"
