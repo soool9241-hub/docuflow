@@ -3,13 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
 import { Loader2 } from 'lucide-react'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
-)
+import { createSupabaseBrowser } from '@/lib/supabase'
 
 function translateError(msg: string): string {
   const map: Record<string, string> = {
@@ -35,6 +30,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const [supabase] = useState(() => createSupabaseBrowser())
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
@@ -49,20 +46,20 @@ export default function LoginPage() {
       if (signInError) {
         console.error('Login error:', signInError)
         setError(translateError(signInError.message))
-        setLoading(false)
         return
       }
 
       if (data?.session) {
-        router.push('/dashboard')
         router.refresh()
+        router.push('/dashboard')
+        return
       } else {
         setError('로그인에 실패했습니다. 다시 시도해주세요.')
-        setLoading(false)
       }
     } catch (err) {
       console.error('Login catch:', err)
       setError('로그인 중 오류가 발생했습니다.')
+    } finally {
       setLoading(false)
     }
   }

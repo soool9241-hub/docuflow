@@ -3,13 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
 import { Loader2 } from 'lucide-react'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
-)
+import { createSupabaseBrowser } from '@/lib/supabase'
 
 function translateError(msg: string): string {
   const map: Record<string, string> = {
@@ -52,6 +47,7 @@ export default function SignupPage() {
     }
 
     setLoading(true)
+    const supabase = createSupabaseBrowser()
 
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -82,8 +78,8 @@ export default function SignupPage() {
 
       // If email confirmation is not required, redirect to dashboard
       if (data.session) {
-        router.push('/dashboard')
         router.refresh()
+        router.push('/dashboard')
       }
     } catch {
       setError('회원가입 중 오류가 발생했습니다.')
