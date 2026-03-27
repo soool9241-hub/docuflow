@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import {
   DocumentType,
   DOCUMENT_TYPE_LABELS,
@@ -40,6 +41,7 @@ const TYPE_DESCRIPTIONS: Record<DocumentType, string> = {
 
 export default function NewDocumentPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
   const [saving, setSaving] = useState(false)
 
@@ -149,6 +151,7 @@ export default function NewDocumentPage() {
         tax_amount: taxTotal,
         notes: notes || null,
         status: 'draft' as const,
+        user_id: user?.id,
       }
 
       const { data, error } = await supabase

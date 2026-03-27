@@ -1,8 +1,9 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
-import { Bell, Search, Menu } from 'lucide-react';
-import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Bell, Search, Menu, LogOut } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 const routeTitles: Record<string, string> = {
   '/dashboard': '대시보드',
@@ -26,8 +27,30 @@ function getPageTitle(pathname: string | null): string {
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const title = getPageTitle(pathname);
   const [notificationCount] = useState(3);
+  const { user, signOut } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : '?';
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/login');
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleMobileMenuToggle = () => {
     const btn = document.getElementById('mobile-menu-toggle');
@@ -80,10 +103,29 @@ export default function Header() {
           </button>
 
           {/* User avatar */}
-          <div className="ml-2 hidden sm:flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm font-semibold">
-              관
-            </div>
+          <div className="ml-2 hidden sm:flex items-center gap-2 relative" ref={userMenuRef}>
+            <button
+              onClick={() => setShowUserMenu((prev) => !prev)}
+              className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm font-semibold hover:bg-indigo-200 transition-colors"
+              title={user?.email || ''}
+            >
+              {userInitial}
+            </button>
+            {showUserMenu && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <p className="text-xs text-gray-400">로그인 계정</p>
+                  <p className="text-sm text-gray-700 truncate">{user?.email}</p>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  로그아웃
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

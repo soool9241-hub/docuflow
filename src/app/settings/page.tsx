@@ -16,6 +16,7 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 
 interface CompanyInfo {
@@ -81,6 +82,7 @@ const AI_MODELS = [
 ]
 
 export default function SettingsPage() {
+  const { user } = useAuth()
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>(DEFAULT_COMPANY)
   const [supabaseSettings, setSupabaseSettings] = useState<SupabaseSettings>(DEFAULT_SUPABASE)
   const [solapiSettings, setSolapiSettings] = useState<SolapiSettings>(DEFAULT_SOLAPI)
@@ -97,6 +99,26 @@ export default function SettingsPage() {
 
   const loadAllSettings = async () => {
     try {
+      // Load company info from company_profiles table
+      const { data: companyData, error: companyError } = await supabase
+        .from('company_profiles')
+        .select('*')
+        .single()
+
+      if (!companyError && companyData) {
+        setCompanyInfo({
+          company_name: companyData.company_name || '',
+          representative: companyData.representative || '',
+          business_number: companyData.business_number || '',
+          business_type: companyData.business_type || '',
+          business_category: companyData.business_category || '',
+          address: companyData.address || '',
+          phone: companyData.phone || '',
+          email: companyData.email || '',
+        })
+      }
+
+      // Load other settings from settings table (RLS handles filtering)
       const { data, error } = await supabase
         .from('settings')
         .select('*')
@@ -106,9 +128,6 @@ export default function SettingsPage() {
       if (data) {
         data.forEach((row) => {
           switch (row.key) {
-            case 'company_info':
-              setCompanyInfo({ ...DEFAULT_COMPANY, ...row.value })
-              break
             case 'supabase':
               setSupabaseSettings({ ...DEFAULT_SUPABASE, ...row.value })
               break
@@ -156,6 +175,42 @@ export default function SettingsPage() {
     } catch (err) {
       console.error('설정 저장 실패:', err)
       toast.error('설정 저장에 실패했습니다.')
+    } finally {
+      setIsSaving(null)
+    }
+  }
+
+  const saveCompanyInfo = async () => {
+    setIsSaving('company_info')
+    try {
+      const { data: existing } = await supabase
+        .from('company_profiles')
+        .select('id')
+        .single()
+
+      if (existing) {
+        const { error } = await supabase
+          .from('company_profiles')
+          .update({
+            ...companyInfo,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('company_profiles')
+          .insert({
+            ...companyInfo,
+            user_id: user?.id,
+          })
+        if (error) throw error
+      }
+
+      toast.success('회사 정보가 저장되었습니다.')
+    } catch (err) {
+      console.error('회사 정보 저장 실패:', err)
+      toast.error('회사 정보 저장에 실패했습니다.')
     } finally {
       setIsSaving(null)
     }
@@ -309,7 +364,7 @@ export default function SettingsPage() {
             />
             <div className="flex justify-end">
               <SaveButton
-                onClick={() => saveSetting('company_info', companyInfo)}
+                onClick={() => saveCompanyInfo()}
                 loading={isSaving === 'company_info'}
               />
             </div>

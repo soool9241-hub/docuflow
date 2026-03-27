@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { getSupabaseWithUser } from '@/lib/supabase'
 
 const SYSTEM_PROMPT = `당신은 한국 비즈니스 서류 작성을 도와주는 전문 AI 어시스턴트입니다.
 
@@ -73,6 +74,14 @@ function extractDocumentData(text: string): { message: string; documentData: Rec
 
 export async function POST(request: NextRequest) {
   try {
+    const { user } = await getSupabaseWithUser()
+    if (!user) {
+      return new Response(JSON.stringify({ error: '로그인이 필요합니다.' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
     const body = await request.json()
     const { messages } = body as { messages: ChatMessage[] }
 

@@ -23,6 +23,7 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 
 export interface Contact {
   id: string
+  user_id?: string
   company_name: string
   representative: string
   business_number: string
@@ -36,6 +37,7 @@ export interface Contact {
 
 export interface Document {
   id: string
+  user_id?: string
   type: DocumentType
   title: string
   document_number: string
@@ -65,10 +67,26 @@ export interface DocumentItem {
 
 export interface ChatMessage {
   id: string
+  user_id?: string
   role: 'user' | 'assistant'
   content: string
   document_id: string | null
   created_at: string
+}
+
+export interface CompanyProfile {
+  id: string
+  user_id: string
+  company_name: string | null
+  representative: string | null
+  business_number: string | null
+  business_type: string | null
+  business_category: string | null
+  address: string | null
+  phone: string | null
+  email: string | null
+  created_at: string
+  updated_at: string
 }
 
 export type DocumentStatus = Document['status']
@@ -81,3 +99,4 @@ export type ContactRow = Database['public']['Tables']['contacts']['Row']
 export type DocumentRow = Database['public']['Tables']['documents']['Row']
 export type ChatHistoryRow = Database['public']['Tables']['chat_history']['Row']
 export type SettingsRow = Database['public']['Tables']['settings']['Row']
+export type CompanyProfileRow = Database['public']['Tables']['company_profiles']['Row']

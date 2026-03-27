@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { getSupabaseWithUser } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
+    const { supabase, user } = await getSupabaseWithUser()
+    if (!user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File | null
 
@@ -53,7 +58,6 @@ export async function POST(request: NextRequest) {
       // Try to store file in Supabase Storage
       let storagePath: string | null = null
       try {
-        const supabase = createServerClient()
         const storageName = `uploads/${Date.now()}_${fileName}`
         const buffer = Buffer.from(text, 'utf-8')
 
@@ -89,7 +93,6 @@ export async function POST(request: NextRequest) {
       let publicUrl: string | null = null
 
       try {
-        const supabase = createServerClient()
         const storageName = `uploads/${Date.now()}_${fileName}`
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)

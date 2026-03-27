@@ -16,6 +16,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
@@ -56,6 +57,7 @@ const CONTACT_FIELDS = [
 ]
 
 export default function UploadPage() {
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'file' | 'camera'>('file')
   const [isDragging, setIsDragging] = useState(false)
   const [file, setFile] = useState<File | null>(null)
@@ -163,6 +165,7 @@ export default function UploadPage() {
         phone: info.phone || null,
         address: info.address || null,
         memo: info.business_type ? `업태: ${info.business_type}${info.business_category ? ` / 종목: ${info.business_category}` : ''}` : null,
+        user_id: user?.id,
       })
 
       if (error) throw error
@@ -332,6 +335,7 @@ export default function UploadPage() {
           phone: contact.phone || null,
           address: contact.address || null,
           memo: contact.memo || null,
+          user_id: user?.id,
         })
 
         if (!error) successCount++

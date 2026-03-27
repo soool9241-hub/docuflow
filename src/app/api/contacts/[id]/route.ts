@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { getSupabaseWithUser } from '@/lib/supabase'
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient()
+    const { supabase, user } = await getSupabaseWithUser()
+    if (!user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    }
+
     const { id } = await params
 
     const { data, error } = await supabase
@@ -37,7 +41,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient()
+    const { supabase, user } = await getSupabaseWithUser()
+    if (!user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    }
+
     const { id } = await params
     const body = await request.json()
 
@@ -105,7 +113,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient()
+    const { supabase, user } = await getSupabaseWithUser()
+    if (!user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    }
+
     const { id } = await params
 
     const { error } = await supabase

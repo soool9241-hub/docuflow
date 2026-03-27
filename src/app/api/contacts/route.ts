@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { getSupabaseWithUser } from '@/lib/supabase'
 
 export async function GET(request: Request) {
   try {
-    const supabase = createServerClient()
+    const { supabase, user } = await getSupabaseWithUser()
+    if (!user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
 
     const search = searchParams.get('search')
@@ -46,7 +50,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = createServerClient()
+    const { supabase, user } = await getSupabaseWithUser()
+    if (!user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    }
+
     const body = await request.json()
 
     const { company_name, representative, business_number, email, phone, address, memo } = body
@@ -77,6 +85,7 @@ export async function POST(request: Request) {
         phone: phone || null,
         address: address || null,
         memo: memo || null,
+        user_id: user.id,
       })
       .select()
       .single()

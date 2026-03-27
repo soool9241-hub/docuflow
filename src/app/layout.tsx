@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { Noto_Sans_KR } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
-import Sidebar from '@/components/layout/Sidebar';
-import Header from '@/components/layout/Header';
+import { AuthProvider } from '@/components/providers/AuthProvider';
+import AuthenticatedLayout from '@/components/layout/AuthenticatedLayout';
 import './globals.css';
 
 const notoSansKR = Noto_Sans_KR({
@@ -31,15 +31,11 @@ export default function RootLayout({
   return (
     <html lang="ko" className={notoSansKR.variable}>
       <body className={`${notoSansKR.className} antialiased`}>
-        <div className="flex h-screen overflow-hidden">
-          <Sidebar />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Header />
-            <main className="flex-1 overflow-y-auto bg-gray-50 p-3 sm:p-4 lg:p-8">
-              {children}
-            </main>
-          </div>
-        </div>
+        <AuthProvider>
+          <AuthenticatedLayout>
+            {children}
+          </AuthenticatedLayout>
+        </AuthProvider>
         <Toaster
           position="top-right"
           toastOptions={{

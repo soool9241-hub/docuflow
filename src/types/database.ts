@@ -12,6 +12,7 @@ export type Database = {
       contacts: {
         Row: {
           id: string
+          user_id: string
           company_name: string
           representative: string
           business_number: string
@@ -24,6 +25,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          user_id?: string
           company_name: string
           representative: string
           business_number: string
@@ -34,6 +36,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          user_id?: string
           company_name?: string
           representative?: string
           business_number?: string
@@ -47,6 +50,7 @@ export type Database = {
       documents: {
         Row: {
           id: string
+          user_id: string
           type:
             | 'quotation'
             | 'transaction_statement'
@@ -73,6 +77,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          user_id?: string
           type:
             | 'quotation'
             | 'transaction_statement'
@@ -97,6 +102,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          user_id?: string
           type?:
             | 'quotation'
             | 'transaction_statement'
@@ -132,6 +138,7 @@ export type Database = {
       chat_history: {
         Row: {
           id: string
+          user_id: string
           role: 'user' | 'assistant'
           content: string
           document_id: string | null
@@ -139,12 +146,14 @@ export type Database = {
         }
         Insert: {
           id?: string
+          user_id?: string
           role: 'user' | 'assistant'
           content: string
           document_id?: string | null
         }
         Update: {
           id?: string
+          user_id?: string
           role?: 'user' | 'assistant'
           content?: string
           document_id?: string | null
@@ -162,21 +171,73 @@ export type Database = {
       settings: {
         Row: {
           id: string
+          user_id: string
           key: string
           value: Json
           updated_at: string
         }
         Insert: {
           id?: string
+          user_id?: string
           key: string
           value: Json
         }
         Update: {
           id?: string
+          user_id?: string
           key?: string
           value?: Json
         }
         Relationships: []
+      }
+      company_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          company_name: string | null
+          representative: string | null
+          business_number: string | null
+          business_type: string | null
+          business_category: string | null
+          address: string | null
+          phone: string | null
+          email: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          company_name?: string | null
+          representative?: string | null
+          business_number?: string | null
+          business_type?: string | null
+          business_category?: string | null
+          address?: string | null
+          phone?: string | null
+          email?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          company_name?: string | null
+          representative?: string | null
+          business_number?: string | null
+          business_type?: string | null
+          business_category?: string | null
+          address?: string | null
+          phone?: string | null
+          email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'company_profiles_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
     }
     Views: {

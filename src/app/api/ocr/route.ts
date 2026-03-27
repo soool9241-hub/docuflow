@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getSupabaseWithUser } from '@/lib/supabase'
 
 interface ClovaOCRField {
   inferText: string
@@ -43,6 +44,11 @@ function extractBusinessInfo(text: string): Record<string, string> {
 
 export async function POST(request: NextRequest) {
   try {
+    const { user } = await getSupabaseWithUser()
+    if (!user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    }
+
     const invokeUrl = process.env.CLOVA_OCR_INVOKE_URL
     const secretKey = process.env.CLOVA_OCR_SECRET_KEY
 

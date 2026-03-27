@@ -11,8 +11,11 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  LogOut,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
   { label: '대시보드', icon: LayoutDashboard, href: '/dashboard' },
@@ -25,8 +28,15 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/login');
+  };
 
   return (
     <>
@@ -98,6 +108,23 @@ export default function Sidebar() {
             );
           })}
         </nav>
+
+        {/* User info & Logout */}
+        <div className="px-3 py-3 border-t border-slate-700/50">
+          {!collapsed && user && (
+            <div className="px-3 py-2 mb-2">
+              <p className="text-xs text-slate-400 truncate">{user.email}</p>
+            </div>
+          )}
+          <button
+            onClick={handleSignOut}
+            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors ${collapsed ? 'justify-center' : ''}`}
+            title={collapsed ? '로그아웃' : undefined}
+          >
+            <LogOut className="w-5 h-5 text-slate-400" />
+            {!collapsed && <span>로그아웃</span>}
+          </button>
+        </div>
 
         {/* Collapse toggle (desktop only) */}
         <div className="hidden lg:flex items-center justify-center py-4 border-t border-slate-700/50">

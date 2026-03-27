@@ -15,6 +15,7 @@ import {
   Building2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import type { Contact } from '@/types'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
@@ -49,6 +50,7 @@ function formatBusinessNumber(value: string): string {
 }
 
 export default function ContactsPage() {
+  const { user } = useAuth()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -167,7 +169,7 @@ export default function ContactsPage() {
       } else {
         const { error: insertError } = await supabase
           .from('contacts')
-          .insert(payload)
+          .insert({ ...payload, user_id: user?.id })
 
         if (insertError) throw insertError
         toast.success('거래처가 추가되었습니다.')

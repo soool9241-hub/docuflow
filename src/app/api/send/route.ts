@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { getSupabaseWithUser } from '@/lib/supabase'
 import { sendSMS } from '@/lib/solapi'
 import { sendEmail } from '@/lib/email'
 import { generateDocumentHTML } from '@/templates/document-html'
@@ -7,7 +7,11 @@ import { DOCUMENT_TYPE_LABELS } from '@/types'
 
 export async function POST(request: Request) {
   try {
-    const supabase = createServerClient()
+    const { supabase, user } = await getSupabaseWithUser()
+    if (!user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    }
+
     const body = await request.json()
 
     const { document_id, method, recipient } = body

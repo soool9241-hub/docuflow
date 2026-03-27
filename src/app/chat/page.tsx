@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { MessageSquarePlus, Sparkles, Loader2, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import { DOCUMENT_TYPE_LABELS } from '@/types'
 import ChatMessage from '@/components/chat/ChatMessage'
 import ChatInput from '@/components/chat/ChatInput'
@@ -39,6 +40,7 @@ const GREETING_MESSAGE: Message = {
 }
 
 export default function ChatPage() {
+  const { user } = useAuth()
   const [messages, setMessages] = useState<Message[]>([GREETING_MESSAGE])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -113,6 +115,7 @@ export default function ChatPage() {
       await supabase.from('chat_history').insert({
         role,
         content: saveContent,
+        user_id: user?.id,
       })
     } catch (err) {
       console.error('채팅 메시지 저장 실패:', err)
@@ -240,14 +243,20 @@ export default function ChatPage() {
     if (!latestDocumentData) return
 
     try {
-      // Get settings for issuer info
-      const { data: settingsData } = await supabase
-        .from('settings')
+      // Get issuer info from company_profiles
+      const { data: companyData } = await supabase
+        .from('company_profiles')
         .select('*')
-        .eq('key', 'company_info')
         .single()
 
-      const issuerInfo = settingsData?.value || {
+      const issuerInfo = companyData ? {
+        company_name: companyData.company_name || '',
+        representative: companyData.representative || '',
+        business_number: companyData.business_number || '',
+        address: companyData.address || '',
+        phone: companyData.phone || '',
+        email: companyData.email || '',
+      } : {
         company_name: '',
         representative: '',
         business_number: '',
@@ -287,6 +296,7 @@ export default function ChatPage() {
         tax_amount: taxAmount,
         notes: latestDocumentData.notes || null,
         status: 'draft',
+        user_id: user?.id,
       })
 
       if (error) throw error

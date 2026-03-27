@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { getSupabaseWithUser } from '@/lib/supabase'
 
 const TYPE_PREFIXES: Record<string, string> = {
   quotation: 'QT',
@@ -13,7 +13,7 @@ const TYPE_PREFIXES: Record<string, string> = {
 }
 
 async function generateDocumentNumber(
-  supabase: ReturnType<typeof createServerClient>,
+  supabase: Awaited<ReturnType<typeof getSupabaseWithUser>>['supabase'],
   type: string
 ): Promise<string> {
   const prefix = TYPE_PREFIXES[type] || 'DOC'
@@ -32,7 +32,11 @@ async function generateDocumentNumber(
 
 export async function GET(request: Request) {
   try {
-    const supabase = createServerClient()
+    const { supabase, user } = await getSupabaseWithUser()
+    if (!user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
 
     const type = searchParams.get('type')
@@ -83,7 +87,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = createServerClient()
+    const { supabase, user } = await getSupabaseWithUser()
+    if (!user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+    }
+
     const body = await request.json()
 
     const { type, title, contact_id, issuer_info, receiver_info, items, total_amount, tax_amount, notes, status } = body
@@ -118,6 +126,7 @@ export async function POST(request: Request) {
         tax_amount: tax_amount ?? 0,
         notes: notes || null,
         status: status || 'draft',
+        user_id: user.id,
       })
       .select()
       .single()
