@@ -19,6 +19,13 @@ import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
+interface OCRResult {
+  fullText: string
+  lines: string[]
+  extractedInfo: Record<string, string>
+  fieldCount: number
+}
+
 interface ParsedRow {
   [key: string]: string
 }
@@ -63,6 +70,9 @@ export default function UploadPage() {
   const [showPreview, setShowPreview] = useState(false)
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [ocrResult, setOcrResult] = useState<OCRResult | null>(null)
+  const [ocrLoading, setOcrLoading] = useState(false)
+  const [savingContact, setSavingContact] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -95,6 +105,73 @@ export default function UploadPage() {
       localStorage.setItem('upload_history', JSON.stringify(updated))
     } catch {
       // Ignore
+    }
+  }
+
+  // --- OCR ---
+  const runOCR = async (fileOrDataUrl: File | string) => {
+    setOcrLoading(true)
+    setOcrResult(null)
+    setExtractedText(null)
+    try {
+      const formData = new FormData()
+      if (typeof fileOrDataUrl === 'string') {
+        formData.append('imageData', fileOrDataUrl)
+      } else {
+        formData.append('file', fileOrDataUrl)
+      }
+
+      const response = await fetch('/api/ocr', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setExtractedText(data.error || 'OCR 처리에 실패했습니다.')
+        return
+      }
+
+      setOcrResult(data)
+      setExtractedText(data.fullText)
+      toast.success(`텍스트 ${data.fieldCount}개 항목 인식 완료!`)
+    } catch (err) {
+      console.error('OCR error:', err)
+      setExtractedText('OCR 처리 중 오류가 발생했습니다.')
+    } finally {
+      setOcrLoading(false)
+    }
+  }
+
+  const saveOcrAsContact = async () => {
+    if (!ocrResult?.extractedInfo) return
+    const info = ocrResult.extractedInfo
+
+    if (!info.company_name && !info.representative) {
+      toast.error('상호명 또는 대표자 정보를 인식하지 못했습니다.')
+      return
+    }
+
+    setSavingContact(true)
+    try {
+      const { error } = await supabase.from('contacts').insert({
+        company_name: info.company_name || '-',
+        representative: info.representative || '-',
+        business_number: info.business_number || '-',
+        email: info.email || null,
+        phone: info.phone || null,
+        address: info.address || null,
+        memo: info.business_type ? `업태: ${info.business_type}${info.business_category ? ` / 종목: ${info.business_category}` : ''}` : null,
+      })
+
+      if (error) throw error
+      toast.success('거래처로 등록되었습니다!')
+    } catch (err) {
+      console.error('Contact save error:', err)
+      toast.error('거래처 저장에 실패했습니다.')
+    } finally {
+      setSavingContact(false)
     }
   }
 
@@ -137,10 +214,10 @@ export default function UploadPage() {
       const reader = new FileReader()
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string)
-        // Placeholder OCR
-        setExtractedText('이미지에서 텍스트를 추출하려면 OCR 서비스 연동이 필요합니다.\n\n현재는 미리보기만 지원됩니다.')
       }
       reader.readAsDataURL(f)
+      // Run OCR
+      runOCR(f)
     } else if (ext === 'csv') {
       // Parse CSV
       const reader = new FileReader()
@@ -373,8 +450,9 @@ export default function UploadPage() {
       ctx.drawImage(video, 0, 0)
       const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
       setCapturedImage(dataUrl)
-      setExtractedText('촬영한 이미지에서 텍스트를 추출하려면 OCR 서비스 연동이 필요합니다.\n\n현재는 미리보기만 지원됩니다.')
       stopCamera()
+      // Run OCR on captured image
+      runOCR(dataUrl)
     }
   }
 
@@ -387,6 +465,8 @@ export default function UploadPage() {
     setFieldMappings([])
     setShowPreview(false)
     setCapturedImage(null)
+    setOcrResult(null)
+    setOcrLoading(false)
     stopCamera()
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -498,9 +578,83 @@ export default function UploadPage() {
                     <div className="relative rounded-xl overflow-hidden border border-gray-200 max-h-96 flex items-center justify-center bg-gray-100">
                       <img src={imagePreview} alt="미리보기" className="max-h-96 object-contain" />
                     </div>
-                    {extractedText && (
+                    {ocrLoading && (
+                      <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                        <Loader2 size={20} className="text-blue-600 animate-spin" />
+                        <p className="text-sm text-blue-700">텍스트 인식 중...</p>
+                      </div>
+                    )}
+                    {ocrResult && (
+                      <div className="space-y-4">
+                        {/* Extracted Info */}
+                        {Object.keys(ocrResult.extractedInfo).length > 0 && (
+                          <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                            <p className="text-sm font-semibold text-green-800 mb-3">인식된 정보</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {ocrResult.extractedInfo.company_name && (
+                                <div className="flex gap-2">
+                                  <span className="text-xs font-medium text-green-600 min-w-[60px]">상호명</span>
+                                  <span className="text-sm text-green-900">{ocrResult.extractedInfo.company_name}</span>
+                                </div>
+                              )}
+                              {ocrResult.extractedInfo.representative && (
+                                <div className="flex gap-2">
+                                  <span className="text-xs font-medium text-green-600 min-w-[60px]">대표자</span>
+                                  <span className="text-sm text-green-900">{ocrResult.extractedInfo.representative}</span>
+                                </div>
+                              )}
+                              {ocrResult.extractedInfo.business_number && (
+                                <div className="flex gap-2">
+                                  <span className="text-xs font-medium text-green-600 min-w-[60px]">사업자번호</span>
+                                  <span className="text-sm text-green-900 font-mono">{ocrResult.extractedInfo.business_number}</span>
+                                </div>
+                              )}
+                              {ocrResult.extractedInfo.phone && (
+                                <div className="flex gap-2">
+                                  <span className="text-xs font-medium text-green-600 min-w-[60px]">전화번호</span>
+                                  <span className="text-sm text-green-900">{ocrResult.extractedInfo.phone}</span>
+                                </div>
+                              )}
+                              {ocrResult.extractedInfo.email && (
+                                <div className="flex gap-2">
+                                  <span className="text-xs font-medium text-green-600 min-w-[60px]">이메일</span>
+                                  <span className="text-sm text-green-900">{ocrResult.extractedInfo.email}</span>
+                                </div>
+                              )}
+                              {ocrResult.extractedInfo.address && (
+                                <div className="flex gap-2 sm:col-span-2">
+                                  <span className="text-xs font-medium text-green-600 min-w-[60px]">주소</span>
+                                  <span className="text-sm text-green-900">{ocrResult.extractedInfo.address}</span>
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              onClick={saveOcrAsContact}
+                              disabled={savingContact}
+                              className="mt-4 w-full px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                              {savingContact ? (
+                                <><Loader2 size={16} className="animate-spin" /> 저장 중...</>
+                              ) : (
+                                <><CheckCircle2 size={16} /> 거래처로 등록</>
+                              )}
+                            </button>
+                          </div>
+                        )}
+                        {/* Full Text */}
+                        <details className="bg-gray-50 border border-gray-200 rounded-xl">
+                          <summary className="px-4 py-3 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-100 rounded-xl">
+                            전체 인식 텍스트 보기 ({ocrResult.fieldCount}개 항목)
+                          </summary>
+                          <div className="px-4 pb-4">
+                            <p className="text-sm text-gray-600 whitespace-pre-wrap">{ocrResult.fullText}</p>
+                          </div>
+                        </details>
+                      </div>
+                    )}
+                    {extractedText && !ocrResult && !ocrLoading && (
                       <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                        <p className="text-sm font-medium text-yellow-800 mb-2">OCR 텍스트 추출</p>
+                        <p className="text-sm font-medium text-yellow-800 mb-2">알림</p>
                         <p className="text-sm text-yellow-700 whitespace-pre-wrap">{extractedText}</p>
                       </div>
                     )}
@@ -692,15 +846,81 @@ export default function UploadPage() {
                   <div className="relative rounded-xl overflow-hidden border border-gray-200 max-h-96 flex items-center justify-center bg-gray-100">
                     <img src={capturedImage} alt="촬영된 이미지" className="max-h-96 object-contain" />
                   </div>
-                  {extractedText && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                      <p className="text-sm font-medium text-yellow-800 mb-2">OCR 텍스트 추출</p>
-                      <p className="text-sm text-yellow-700 whitespace-pre-wrap">{extractedText}</p>
+                  {ocrLoading && (
+                    <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                      <Loader2 size={20} className="text-blue-600 animate-spin" />
+                      <p className="text-sm text-blue-700">텍스트 인식 중...</p>
+                    </div>
+                  )}
+                  {ocrResult && (
+                    <div className="space-y-4">
+                      {Object.keys(ocrResult.extractedInfo).length > 0 && (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                          <p className="text-sm font-semibold text-green-800 mb-3">인식된 정보</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {ocrResult.extractedInfo.company_name && (
+                              <div className="flex gap-2">
+                                <span className="text-xs font-medium text-green-600 min-w-[60px]">상호명</span>
+                                <span className="text-sm text-green-900">{ocrResult.extractedInfo.company_name}</span>
+                              </div>
+                            )}
+                            {ocrResult.extractedInfo.representative && (
+                              <div className="flex gap-2">
+                                <span className="text-xs font-medium text-green-600 min-w-[60px]">대표자</span>
+                                <span className="text-sm text-green-900">{ocrResult.extractedInfo.representative}</span>
+                              </div>
+                            )}
+                            {ocrResult.extractedInfo.business_number && (
+                              <div className="flex gap-2">
+                                <span className="text-xs font-medium text-green-600 min-w-[60px]">사업자번호</span>
+                                <span className="text-sm text-green-900 font-mono">{ocrResult.extractedInfo.business_number}</span>
+                              </div>
+                            )}
+                            {ocrResult.extractedInfo.phone && (
+                              <div className="flex gap-2">
+                                <span className="text-xs font-medium text-green-600 min-w-[60px]">전화번호</span>
+                                <span className="text-sm text-green-900">{ocrResult.extractedInfo.phone}</span>
+                              </div>
+                            )}
+                            {ocrResult.extractedInfo.email && (
+                              <div className="flex gap-2">
+                                <span className="text-xs font-medium text-green-600 min-w-[60px]">이메일</span>
+                                <span className="text-sm text-green-900">{ocrResult.extractedInfo.email}</span>
+                              </div>
+                            )}
+                            {ocrResult.extractedInfo.address && (
+                              <div className="flex gap-2 sm:col-span-2">
+                                <span className="text-xs font-medium text-green-600 min-w-[60px]">주소</span>
+                                <span className="text-sm text-green-900">{ocrResult.extractedInfo.address}</span>
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={saveOcrAsContact}
+                            disabled={savingContact}
+                            className="mt-4 w-full px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                          >
+                            {savingContact ? (
+                              <><Loader2 size={16} className="animate-spin" /> 저장 중...</>
+                            ) : (
+                              <><CheckCircle2 size={16} /> 거래처로 등록</>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                      <details className="bg-gray-50 border border-gray-200 rounded-xl">
+                        <summary className="px-4 py-3 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-100 rounded-xl">
+                          전체 인식 텍스트 보기 ({ocrResult.fieldCount}개 항목)
+                        </summary>
+                        <div className="px-4 pb-4">
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap">{ocrResult.fullText}</p>
+                        </div>
+                      </details>
                     </div>
                   )}
                   <div className="flex justify-end gap-3">
                     <button
-                      onClick={() => { setCapturedImage(null); setExtractedText(null); startCamera() }}
+                      onClick={() => { setCapturedImage(null); setOcrResult(null); setExtractedText(null); startCamera() }}
                       className="px-5 py-2.5 text-sm text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
                     >
                       다시 촬영
