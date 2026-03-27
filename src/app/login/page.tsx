@@ -21,7 +21,11 @@ function translateError(msg: string): string {
     'For security purposes, you can only request this once every 60 seconds': '보안을 위해 60초에 한 번만 요청할 수 있습니다.',
     'User not found': '가입되지 않은 이메일입니다.',
   }
-  return map[msg] || msg.replace(/[A-Za-z]/g, '') || '오류가 발생했습니다. 다시 시도해주세요.'
+  if (map[msg]) return map[msg]
+  if (msg.toLowerCase().includes('invalid')) return '이메일 또는 비밀번호가 올바르지 않습니다.'
+  if (msg.toLowerCase().includes('rate') || msg.toLowerCase().includes('limit')) return '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.'
+  if (msg.toLowerCase().includes('confirm') || msg.toLowerCase().includes('verified')) return '이메일 인증이 필요합니다.'
+  return '로그인에 실패했습니다. 다시 시도해주세요.'
 }
 
 export default function LoginPage() {
@@ -37,21 +41,28 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (signInError) {
+        console.error('Login error:', signInError)
         setError(translateError(signInError.message))
+        setLoading(false)
         return
       }
 
-      router.push('/dashboard')
-      router.refresh()
-    } catch {
+      if (data?.session) {
+        router.push('/dashboard')
+        router.refresh()
+      } else {
+        setError('로그인에 실패했습니다. 다시 시도해주세요.')
+        setLoading(false)
+      }
+    } catch (err) {
+      console.error('Login catch:', err)
       setError('로그인 중 오류가 발생했습니다.')
-    } finally {
       setLoading(false)
     }
   }
